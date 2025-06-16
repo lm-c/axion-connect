@@ -111,11 +111,11 @@ namespace AxionConnect {
     [Browsable(false)]
     public double SobremetalCompr { get; set; } = 0;
 
-    [Browsable(false)]
-    public bool CadastrarProdutoErp { get; set; }
+    //[Browsable(false)]
+    //public bool CadastrarProdutoErp { get; set; }
 
-    [Browsable(false)]
-    public bool CadastrarAddin { get; set; }
+    //[Browsable(false)]
+    //public bool CadastrarAddin { get; set; }
 
     [Browsable(false)]
     public bool Fantasma { get; set; }
@@ -131,8 +131,10 @@ namespace AxionConnect {
           int contador = 0;
           await AdicionarEngenhariaNaArvoreAsync(db, treeView.Nodes, codProduto);
 
-          MsgBox.ShowWaitMessage("Analisando componentes...");
-          await PercorrerTreeViewAnalisarCompAsync(db, treeView.Nodes[0], _listaProduto);
+          if (treeView.Nodes.Count > 0) {
+            MsgBox.ShowWaitMessage("Analisando componentes...");
+            await PercorrerTreeViewAnalisarCompAsync(db, treeView.Nodes[0], _listaProduto);
+          }
         }
       } catch (Exception ex) {
         MsgBox.Show($"Erro ao ler componentes do ERP\n\n{ex.Message}", "Axion LM Projetos",
@@ -146,7 +148,17 @@ namespace AxionConnect {
     private static async Task AdicionarEngenhariaNaArvoreAsync(ContextoDados db, TreeNodeCollection nodes, long codProduto, ProdutoErp produtoPai = null, ComponenteEng compEng = null) {
       var engenharia = await Api.GetEngenhariaAsync(codProduto.ToString());
 
+      if (engenharia == null && !codProduto.ToString().StartsWith("10")) {
+        Toast.Warning($"Engenharia '{codProduto}' não cadastrada no ERP.");
+        return;
+      }
+
       var prod = db.produto_erp.FirstOrDefault(x => x.codigo_produto == codProduto);
+
+      if (prod == null && !codProduto.ToString().StartsWith("10")) {
+        Toast.Warning($"Produto '{codProduto}' não cadastrado no Addin Axion.");
+        return;
+      }
 
       // Gerar o nível atual (seja produto normal ou item genérico)
       string nivelAtual = produtoPai == null
@@ -269,7 +281,7 @@ namespace AxionConnect {
             }
           }
         }
-      } else produtoErp.CadastrarProdutoErp = true;
+      }
     }
 
     internal static void AdicionarPendencia(ProdutoErp produtoErp, PendenciasEngenharia pendencia) {

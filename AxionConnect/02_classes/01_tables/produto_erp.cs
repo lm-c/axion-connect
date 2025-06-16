@@ -14,9 +14,9 @@ namespace AxionConnect {
 
     [DataObjectField(false, true)]
     public long codigo_produto { get; set; }
-    
-    [DataObjectField(false, true)]
-    public long codigo_componente { get; set; }
+
+    [StringLength(50)]
+    public string codigo_componente { get; set; }
 
     public TipoComponente tipo_componente { get; set; }
 
