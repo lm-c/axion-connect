@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.ConexaoMySql.cs
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
