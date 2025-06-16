@@ -9,6 +9,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static AxionConnect.Api;
@@ -18,10 +19,9 @@ namespace AxionConnect {
     private EModelViewControl _eDrawingsCtrl;
     SortableBindingList<ProdutoErp> _produtos = new SortableBindingList<ProdutoErp>();
     TreeView _arvoreCompleta = new TreeView();
-    bool _visualizandoDesenho = false;
+    bool _visualizando3D = false;
 
     Color corErro = Color.Red;
-    Color corAlerta = Color.Blue;
     Color corSucesso = Color.Green;
 
     string tempoPadro = "00:01";
@@ -111,9 +111,7 @@ namespace AxionConnect {
         MsgBox.ShowWaitMessage("Carregando componentes do ERP...");
         _produtos = await ProdutoErp.GetComponentsFromERPAsync(_arvoreCompleta, codEngenharia);
         CarregarGrid();
-        if (_produtos.Count > 0) {
-          txtCodEngenharia.Enabled = false;
-        }
+        txtCodEngenharia.Enabled = _produtos.Count == 0;
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao processar o código de engenharia.");
       } finally {
@@ -173,7 +171,7 @@ namespace AxionConnect {
         _eDrawingsCtrl.CloseActiveDoc(produtoERP.PathName);
       }
 
-      ptbRefresh.Visible = ptbDesenho.Visible = ptbProximoDesenho.Visible = false;
+      ptbZoom.Visible = ptbDesenho.Visible = ptbProximoDesenho.Visible = false;
       txtCodEngenharia.Enabled = true;
       txtCodEngenharia.Text = string.Empty;
       _arvoreCompleta.Nodes.Clear();
@@ -234,12 +232,13 @@ namespace AxionConnect {
       try {
         lblPeso.Text = "0,000Kg";
         lblEspess.Text =
-        lblCodMat.Text =
+        lblCodDescMat.Text =
         lblCodigoProduto.Text =
-        lblDescMat.Text = string.Empty;
+        lblDescricao.Text = string.Empty;
 
         ClearControls();
         var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
+        var nomeDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
 
         txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = false;
         txtMaquina.SelectedValue = txtOperacao.SelectedValue = null;
@@ -247,27 +246,38 @@ namespace AxionConnect {
         txtTempoOperacao.Text = tempoPadro;
         txtNumeroOperadores.Text = numOperadorPadrao.ToString();
 
-        if (File.Exists(produtoErp.PathName))
+        ptbZoom.Visible = true;
+
+        if (File.Exists(nomeDesenho)) {
+          _eDrawingsCtrl.OpenDoc(nomeDesenho, false, false, false, "");
+          ptbDesenho.Visible = true;
+          _visualizando3D = false;
+          if (File.Exists(nomeDesenho)) {
+            _eDrawingsCtrl.OpenDoc(nomeDesenho, false, false, false, "");
+          }
+          ptbDesenho.Image = produtoErp.TipoComponente == TipoComponente.Montagem ? Properties.Resources.assembly : Properties.Resources.part;
+          toolTip1.SetToolTip(ptbDesenho, produtoErp.TipoComponente == TipoComponente.Montagem ? "Abrir Conjunto" : "Abrir Peça");
+
+          int total = _eDrawingsCtrl.SheetCount;
+
+          ptbProximoDesenho.Visible = total > 1;
+          ptbZoom.Image = Properties.Resources.zoomfit;
+        } else if (File.Exists(produtoErp.PathName)) {
           _eDrawingsCtrl.OpenDoc(produtoErp.PathName, false, false, false, "");
-        else {
+          toolTip1.SetToolTip(ptbDesenho, "Abrir Desenho");
+          _visualizando3D = true;
+          ptbDesenho.Image = Properties.Resources.draw;
+          ptbZoom.Image = Properties.Resources.isometric;
+          ptbProximoDesenho.Visible = false;
+        } else {
           _eDrawingsCtrl.CloseActiveDoc(produtoErp.PathName);
           Toast.Info($"Componente Virtual não pode ser aberto no Axion Connect:\r\n{produtoErp.PathName}");
           ptbDesenho.Visible = false;
-          ptbRefresh.Visible = false;
+          ptbZoom.Visible = false;
         }
+
         _eDrawingsCtrl.BackgroundColorOverride = true;
         _eDrawingsCtrl.BackgroundColor = 0xdfe4e9;
-        ptbRefresh.Visible = true;
-        ptbProximoDesenho.Visible = false;
-        _visualizandoDesenho = false;
-        toolTip1.SetToolTip(ptbDesenho, "Abrir Desenho");
-        ptbDesenho.Image = Properties.Resources.draw;
-        ptbRefresh.Image = Properties.Resources.isometric;
-
-        var nomeDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
-        if (File.Exists(nomeDesenho)) {
-          ptbDesenho.Visible = true;
-        }
 
         if (produtoErp.Pendencias.Where(y => y.EhPendenciaCritica()).ToList().Count > 0) {
           var msgPend = string.Empty;
@@ -287,6 +297,8 @@ namespace AxionConnect {
           Toast.Info($"{produtoErp.Name} [{produtoErp.Nivel}]\r\n{msgPend}");
         }
 
+        _eDrawingsCtrl.ActivateInkMarkup(0);
+
         TreeNode node = GetNodeByLevelPath(_arvoreCompleta, produtoErp.Nivel);
         TreeNode clonedNode = (TreeNode)node.Clone();
         trvProduto.Nodes.Clear();
@@ -301,7 +313,7 @@ namespace AxionConnect {
     }
 
     private void AtualizarInformacoes(ProdutoErp produtoErp) {
-      txtDescricao.Text = produtoErp.Denominacao;
+      lblDescricao.Text = produtoErp.Denominacao;
       txtSmLarg.Text = produtoErp.SobremetalLarg.ToString("#");
       txtSmCompr.Text = produtoErp.SobremetalCompr.ToString("#");
       lblPeso.Text = produtoErp.PesoBruto + " kg";
@@ -321,8 +333,7 @@ namespace AxionConnect {
           var descricMaterial = produtoErpFilho.Denominacao;
           var codigo = produtoErpFilho.CodProduto;
 
-          lblDescMat.Text = descricMaterial;
-          lblCodMat.Text = codigo.ToString();
+          lblCodDescMat.Text = $"{codigo} - {descricMaterial}";
         }
       }
     }
@@ -472,6 +483,10 @@ namespace AxionConnect {
 
             await Api.CadastrarEngenhariaAsync(db, engenharia);
 
+            DataGridViewRow row = dgv.Grid.Rows.ToDynamicList().Where(x => ((ProdutoErp)x.DataBoundItem).CodProduto == produto.CodProduto).FirstOrDefault();
+            if(row != null) {
+              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
+            }
           }
         }
       } catch (Exception ex) {
@@ -515,13 +530,15 @@ namespace AxionConnect {
             DataGridViewRow row = (DataGridViewRow)list[i];
             var produtoErp = row.DataBoundItem as ProdutoErp;
 
-            row.DefaultCellStyle.ForeColor = produtoErp.CadastrarProdutoErp
-              ? row.DefaultCellStyle.SelectionForeColor = corErro
-              : row.DefaultCellStyle.SelectionForeColor = corSucesso;
+            //row.DefaultCellStyle.ForeColor = produtoErp.CadastrarProdutoErp
+            //  ? row.DefaultCellStyle.SelectionForeColor = corErro
+            //  : row.DefaultCellStyle.SelectionForeColor = corSucesso;
 
             if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
               ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
-            }
+              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corErro;
+            } else
+              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
 
             if (produtoErp.Fantasma)
               produtoErp.ImgFantasma = Properties.Resources.fantasma;
@@ -631,10 +648,11 @@ namespace AxionConnect {
 
         ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoRevisar);
         ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
+      } else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
+        produtoERP.Operacoes = new List<produto_erp_operacao>();
+        ProdutoErp.AdicionarPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
+        dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
       }
-      //else if(produtoERP.TipoComponente == TipoComponente.ItemBiblioteca) {
-      //  ProdutoErp.AdicionarPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
-      //}
 
       Toast.Success("Processo atualizado com sucesso!");
     }
@@ -732,8 +750,8 @@ namespace AxionConnect {
       if (dgv.Grid.CurrentRow != null) {
         var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
 
-        if (!_visualizandoDesenho) {
-          _visualizandoDesenho = true;
+        if (_visualizando3D) {
+          _visualizando3D = false;
 
           var nomeDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
           if (File.Exists(nomeDesenho)) {
@@ -745,16 +763,16 @@ namespace AxionConnect {
           int total = _eDrawingsCtrl.SheetCount;
 
           ptbProximoDesenho.Visible = total > 1;
-          ptbRefresh.Image = Properties.Resources.zoomfit;
+          ptbZoom.Image = Properties.Resources.zoomfit;
         } else {
-          _visualizandoDesenho = false;
+          _visualizando3D = true;
 
           _eDrawingsCtrl.OpenDoc(produtoErp.PathName, false, false, false, "");
           ptbDesenho.Image = Properties.Resources.draw;
           toolTip1.SetToolTip(ptbDesenho, "Abrir Desenho");
 
           ptbProximoDesenho.Visible = false;
-          ptbRefresh.Image = Properties.Resources.isometric;
+          ptbZoom.Image = Properties.Resources.isometric;
         }
       }
     }
@@ -774,7 +792,7 @@ namespace AxionConnect {
     }
 
     private void PnlRefresh_Click(object sender, EventArgs e) {
-      if (!_visualizandoDesenho)
+      if (_visualizando3D)
         _eDrawingsCtrl.ViewOrientation = EMVViewOrientation.eMVOrientationIsoMetric;
       _eDrawingsCtrl.ViewOrientation = EMVViewOrientation.eMVOrientationZoomToFit;
     }
