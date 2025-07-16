@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.ConexaoMySql.cs
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -361,3 +362,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/AxionConnect/07_helper/ConexaoMySql.cs

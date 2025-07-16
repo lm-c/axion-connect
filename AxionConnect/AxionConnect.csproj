@@ -103,10 +103,10 @@
       <HintPath>..\packages\K4os.Hash.xxHash.1.0.8\lib\net462\K4os.Hash.xxHash.dll</HintPath>
     </Reference>
     <Reference Include="LmCorbieCriptografar">
-      <HintPath>..\..\..\..\LmCorbieUI\LmCorbieUI\bin\Debug\LmCorbieCriptografar.dll</HintPath>
+      <HintPath>..\..\corbie-ui\LmCorbieUI\bin\Debug\LmCorbieCriptografar.dll</HintPath>
     </Reference>
     <Reference Include="LmCorbieUI">
-      <HintPath>..\..\..\..\LmCorbieUI\LmCorbieUI\bin\Debug\LmCorbieUI.dll</HintPath>
+      <HintPath>..\..\corbie-ui\LmCorbieUI\bin\Debug\LmCorbieUI.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
