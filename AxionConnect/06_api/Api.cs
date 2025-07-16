@@ -4,6 +4,7 @@ namespace AxionConnect {
   internal partial class Api {
     public static string url = string.Empty;
     public static string token = string.Empty;
+    public static string chave_edrawings = string.Empty;
     public static int codigoEmpresa = 1;
 
     internal static RestClient GetClient(string modulo, string endpoint) {

@@ -11,9 +11,10 @@ namespace AxionConnect {
     public event Action<EModelViewControl> EDrawingsControlLoaded;
     private bool _isloaded = false;
 
-    public EDrawingsHost() : base("C59EEF21-0223-4C39-A708-A3BE9008C67E") {
+    public EDrawingsHost() : base(Api.chave_edrawings) {
       // O GUID acima é o identificador do controle EModelViewControl.
       // Certifique-se de que este GUID corresponde ao controle que você está usando.
+      // "C59EEF21-0223-4C39-A708-A3BE9008C67E"
     }
     protected override void OnCreateControl() {
       base.OnCreateControl();

@@ -80,7 +80,7 @@ namespace AxionConnect {
           throw new Exception($"Erro: {response.StatusCode}\r\n{errorMessage}");
         }
       } catch (Exception ex) {
-        Toast.Error($"Erro ao Alterar Item: {ex.Message}");
+        Toast.Error($"Erro ao Alterar ItemGenérico.\n\nItem: {produtoErp.Name}\n\\n{ex.Message}");
       }
 
     }

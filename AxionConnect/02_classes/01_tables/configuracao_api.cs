@@ -27,6 +27,10 @@ namespace AxionConnect {
     [Browsable(false)]
     [StringLength(500)]
     public string token { get; set; }
+    
+    [Browsable(false)]
+    [StringLength(250)]
+    public string chave_edrawings { get; set; }
 
     [Browsable(false)]
     [StringLength(15)]

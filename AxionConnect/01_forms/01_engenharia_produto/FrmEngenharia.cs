@@ -21,7 +21,7 @@ namespace AxionConnect {
     TreeView _arvoreCompleta = new TreeView();
     bool _visualizando3D = false;
 
-    Color corErro = Color.Red;
+    //Color corErro = Color.Red;
     Color corSucesso = Color.Green;
 
     string tempoPadro = "00:01";
@@ -74,6 +74,7 @@ namespace AxionConnect {
         trvProduto.BackColor = LmCor.Bc_Form;
         txtTempoOperacao.Text = tempoPadro;
         txtNumeroOperadores.Text = numOperadorPadrao.ToString();
+        LimparLabels();
         this.Refresh();
       }));
     }
@@ -96,6 +97,7 @@ namespace AxionConnect {
     private void TxtCodEngenharia_Leave(object sender, EventArgs e) {
       if (long.TryParse(txtCodEngenharia.Text, out long codEngenharia)) {
         txtCodEngenharia.Enabled = false;
+        btnNovaEngenharia.Enabled = btnSalvar.Enabled = false;
         CarregarEngenhariaAsync(codEngenharia);
       }
     }
@@ -112,6 +114,7 @@ namespace AxionConnect {
         _produtos = await ProdutoErp.GetComponentsFromERPAsync(_arvoreCompleta, codEngenharia);
         CarregarGrid();
         txtCodEngenharia.Enabled = _produtos.Count == 0;
+        btnNovaEngenharia.Enabled = btnSalvar.Enabled = true;
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao processar o código de engenharia.");
       } finally {
@@ -174,11 +177,23 @@ namespace AxionConnect {
       ptbZoom.Visible = ptbDesenho.Visible = ptbProximoDesenho.Visible = false;
       txtCodEngenharia.Enabled = true;
       txtCodEngenharia.Text = string.Empty;
+
+      // limpar labels
+      LimparLabels();
+
       _arvoreCompleta.Nodes.Clear();
       trvProduto.Nodes.Clear();
       _produtos = new SortableBindingList<ProdutoErp>();
       dgv.CarregarGrid(_produtos);
       txtCodEngenharia.Focus();
+    }
+
+    private void LimparLabels() {
+      lblEspess.Text =
+      lblCodDescMat.Text =
+      lblCodigoProduto.Text =
+      lblPeso.Text =
+      lblDescricao.Text = string.Empty;
     }
 
     private void BtnVoltar_Click(object sender, EventArgs e) {
@@ -414,6 +429,8 @@ namespace AxionConnect {
               codClassificacao = produtoErp.TipoComponente == TipoComponente.Montagem ? 3 : 4,
               nomeArquivoDesenhoEng = produtoErp.Name,
               descricaoProduto = $"{produtoErp.Denominacao} - {produtoErp.Name}",
+              engenhariaFantasma = produtoErp.Fantasma,
+              descEngenhariaFantasma = produtoErp.Fantasma ? "Engenharia Fantasma" : "",
             };
 
             if (node.Nodes.Count > 0) {
@@ -483,14 +500,21 @@ namespace AxionConnect {
 
             await Api.CadastrarEngenhariaAsync(db, engenharia);
 
-            DataGridViewRow row = dgv.Grid.Rows.ToDynamicList().Where(x => ((ProdutoErp)x.DataBoundItem).CodProduto == produto.CodProduto).FirstOrDefault();
-            if(row != null) {
-              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
+            DataGridViewRow row = dgv.Grid.Rows.ToDynamicList().Where(x => ((ProdutoErp)x.DataBoundItem).CodProduto == produto?.CodProduto).FirstOrDefault();
+            if (row != null) {
+              var startIndex = row.Index;
+              if (startIndex < dgv.Grid.Rows.Count) {
+                if (startIndex < dgv.Grid.FirstDisplayedScrollingRowIndex || startIndex > dgv.Grid.FirstDisplayedScrollingRowIndex + dgv.Grid.DisplayedRowCount(false) - 1) {
+                  dgv.Grid.FirstDisplayedScrollingRowIndex = startIndex;
+                }
+
+                row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
+              }
             }
           }
         }
       } catch (Exception ex) {
-        Toast.Error("Erro ao gerar Engenharia:\r\n" + ex.Message);
+        Toast.Error($"Erro ao gerar Engenharia Item: {((ProdutoErp)node.Tag).Name}\n\n{ex.Message}");
       }
     }
 
@@ -536,17 +560,14 @@ namespace AxionConnect {
 
             if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
               ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
-              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corErro;
-            } else
-              row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
-
-            if (produtoErp.Fantasma)
-              produtoErp.ImgFantasma = Properties.Resources.fantasma;
-
+              //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corErro;
+            } 
+            //else
+              //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
           }
         }
       } catch (Exception ex) {
-        Toast.Error("Erro ao formatar cores grid. \r\n" + ex.Message);
+        Toast.Error("Erro ao verificar pendencias de processos. \r\n" + ex.Message);
       } finally { MsgBox.CloseWaitMessage(); }
     }
 
@@ -651,7 +672,7 @@ namespace AxionConnect {
       } else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
         produtoERP.Operacoes = new List<produto_erp_operacao>();
         ProdutoErp.AdicionarPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
-        dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
+        //dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
       }
 
       Toast.Success("Processo atualizado com sucesso!");

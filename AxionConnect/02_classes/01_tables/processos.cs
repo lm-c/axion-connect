@@ -27,10 +27,6 @@ namespace AxionConnect {
     public int codigo_maquina { get; set; }
 
     [LarguraColunaGrid(80)]
-    [DisplayName("Mostrar Processo na Inserção de Processo")]
-    public bool carregarNaAplicacaoProcesso { get; set; }
-    
-    [LarguraColunaGrid(80)]
     public bool ativo { get; set; }
 
     public static bool Salvar(processos processo) {

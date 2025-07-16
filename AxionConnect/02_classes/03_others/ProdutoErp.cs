@@ -30,10 +30,10 @@ namespace AxionConnect {
     [AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
     public Bitmap Img2D { get; set; } = new Bitmap(20, 20);
 
-    [LarguraColunaGrid(25)]
-    [DisplayName(" "), ToolTipGrid("Item Fantasma")]
-    [AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
-    public Bitmap ImgFantasma { get; set; } = new Bitmap(20, 20);
+    //[LarguraColunaGrid(25)]
+    //[DisplayName(" "), ToolTipGrid("Item Fantasma")]
+    //[AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
+    //public Bitmap ImgFantasma { get; set; } = new Bitmap(20, 20);
 
     [LarguraColunaGrid(25)]
     [DisplayName(" "), ToolTipGrid("Pendências")]
@@ -156,7 +156,7 @@ namespace AxionConnect {
       var prod = db.produto_erp.FirstOrDefault(x => x.codigo_produto == codProduto);
 
       if (prod == null && !codProduto.ToString().StartsWith("10")) {
-        Toast.Warning($"Produto '{codProduto}' não cadastrado no Addin Axion.");
+        Toast.Warning($"Produto '{codProduto}' Filho de '{produtoPai.CodProduto}' não cadastrado no Addin Axion.");
         return;
       }
 
@@ -240,7 +240,8 @@ namespace AxionConnect {
             long codFilho = Convert.ToInt64(item.codInsumo);
 
             // Aqui você chama recursivamente o método para adicionar os filhos do componente
-            await AdicionarEngenhariaNaArvoreAsync(db, node.Nodes, codFilho, produtoErp, item);
+            if (produtoErp.TipoComponente != TipoComponente.ItemBiblioteca)
+              await AdicionarEngenhariaNaArvoreAsync(db, node.Nodes, codFilho, produtoErp, item);
           }
         }
       }
@@ -264,7 +265,7 @@ namespace AxionConnect {
             var processo = new processos {
               codigo_maquina = maCad.codMaquina,
               codigo_operacao = opCad.codOperacao,
-              carregarNaAplicacaoProcesso = false,
+              //carregarNaAplicacaoProcesso = false,
               ativo = true,
             };
 
@@ -315,7 +316,7 @@ namespace AxionConnect {
         var produtoErp = node.Tag as ProdutoErp;
         if (produtoErp != null) {
           if (!_listaProduto.Any(x => x.Name == produtoErp.Name && x.Referencia == produtoErp.Referencia && x.Configuracao == produtoErp.Configuracao)) {
-            if (produtoErp.TipoComponente != TipoComponente.ListaMaterial) {
+            if (produtoErp.TipoComponente != TipoComponente.ListaMaterial && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca && !produtoErp.Fantasma) {
               var nameDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
               produtoErp.Img3D = produtoErp.TipoComponente == TipoComponente.Montagem ? Properties.Resources.assembly : Properties.Resources.part;
               produtoErp.Img2D = File.Exists(nameDesenho) ? Properties.Resources.draw : Properties.Resources.not_draw;

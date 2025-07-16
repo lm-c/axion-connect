@@ -55,9 +55,6 @@ namespace AxionConnect {
     [LarguraColunaGrid(120)]
     public int faseProducao { get; set; }
 
-    [Browsable(false)]
-    public bool carregarControleNaAplicacaoProcesso { get; set; } = false;
-
     public static List<Processo> ListaProcessos { get; set; } = new List<Processo>();
     public static List<Api.Operacao> ListaOperacoesERP { get; set; } = new List<Api.Operacao>();
     public static List<Api.Maquina> ListaMaquinasERP { get; set; } = new List<Api.Maquina>();
@@ -86,7 +83,6 @@ namespace AxionConnect {
             tipo = operacao.tipo,
             centroCusto = maquina.centroCusto,
             faseProducao = operacao.faseProducao ?? 0, // Default para 0 se for nulo
-            carregarControleNaAplicacaoProcesso = processo.carregarNaAplicacaoProcesso,
           });
         }
         ListaProcessos = ListaProcessos.OrderByDescending(x => x.tipo).ThenBy(x => x.codOperacao).ToList();
