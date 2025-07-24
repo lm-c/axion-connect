@@ -128,13 +128,14 @@ namespace AxionConnect {
       try {
         using (ContextoDados db = new ContextoDados()) {
           treeView.Nodes.Clear(); // Limpa a árvore antes de começar
-          int contador = 0;
-          await AdicionarEngenhariaNaArvoreAsync(db, treeView.Nodes, codProduto);
 
-          if (treeView.Nodes.Count > 0) {
-            MsgBox.ShowWaitMessage("Analisando componentes...");
-            await PercorrerTreeViewAnalisarCompAsync(db, treeView.Nodes[0], _listaProduto);
-          }
+          await Loader.ShowDuringOperation(async (progress) => {
+            await AdicionarEngenhariaNaArvoreAsync(db, treeView.Nodes, progress, codProduto);
+
+            if (treeView.Nodes.Count > 0) {
+              await PercorrerTreeViewAnalisarCompAsync(db, treeView.Nodes[0], _listaProduto, progress);
+            }
+          });
         }
       } catch (Exception ex) {
         MsgBox.Show($"Erro ao ler componentes do ERP\n\n{ex.Message}", "Axion LM Projetos",
@@ -145,20 +146,31 @@ namespace AxionConnect {
       return new SortableBindingList<ProdutoErp>(_listaProduto);
     }
 
-    private static async Task AdicionarEngenhariaNaArvoreAsync(ContextoDados db, TreeNodeCollection nodes, long codProduto, ProdutoErp produtoPai = null, ComponenteEng compEng = null) {
+    private static async Task AdicionarEngenhariaNaArvoreAsync(ContextoDados db, TreeNodeCollection nodes, IProgress<string> progress, long codProduto, ProdutoErp produtoPai = null, ComponenteEng compEng = null) {
       var engenharia = await Api.GetEngenhariaAsync(codProduto.ToString());
 
       if (engenharia == null && !codProduto.ToString().StartsWith("10")) {
-        Toast.Warning($"Engenharia '{codProduto}' não cadastrada no ERP.");
+        progress.Report($"Engenharia '{codProduto}' não cadastrada no ERP.");
+        await Task.Delay(3000);
+        //Toast.Warning($"Engenharia '{codProduto}' não cadastrada no ERP.");
+        return;
+      }
+
+      if (!Loader._isWorking) {
+        // Toast.Info("Operação cancelada pelo usuário.");
+        // progress.Report($"Operação cancelada pelo usuário.");
         return;
       }
 
       var prod = db.produto_erp.FirstOrDefault(x => x.codigo_produto == codProduto);
 
       if (prod == null && !codProduto.ToString().StartsWith("10")) {
-        Toast.Warning($"Produto '{codProduto}' Filho de '{produtoPai.CodProduto}' não cadastrado no Addin Axion.");
+        progress.Report($"Produto '{codProduto}' Filho de '{produtoPai.CodProduto}' não cadastrado no Addin Axion.");
+        //Toast.Warning($"Produto '{codProduto}' Filho de '{produtoPai.CodProduto}' não cadastrado no Addin Axion.");
         return;
       }
+
+      progress.Report($"lendo Componente:\r\n{codProduto}");
 
       // Gerar o nível atual (seja produto normal ou item genérico)
       string nivelAtual = produtoPai == null
@@ -185,9 +197,9 @@ namespace AxionConnect {
             SobremetalLarg = 0,
             SobremetalCompr = 0,
             Quantidade = compEng.quantidade,
-            Espessura = compEng.espessura,
-            Largura = compEng.largura,
-            Comprimento = compEng.comprimento,
+            Espessura = compEng.espessura * 1000,
+            Largura = compEng.largura * 1000,
+            Comprimento = compEng.comprimento * 1000,
             Fantasma = false,
           };
 
@@ -222,7 +234,7 @@ namespace AxionConnect {
           TipoListaMaterial = prod.espessura > 0 && prod.largura > 0 ? TipoListaMaterial.Chapa : TipoListaMaterial.Soldagem,
         };
 
-        produto_erp_operacao.SelecionarProcessoProduto(produtoErp);
+        //produto_erp_operacao.SelecionarProcessoProduto(produtoErp);
 
         var iconIndex = produtoErp.TipoComponente == TipoComponente.ItemBiblioteca ? 5 : produtoErp.TipoComponente == TipoComponente.Montagem ? 0 : 1;
 
@@ -241,7 +253,7 @@ namespace AxionConnect {
 
             // Aqui você chama recursivamente o método para adicionar os filhos do componente
             if (produtoErp.TipoComponente != TipoComponente.ItemBiblioteca)
-              await AdicionarEngenhariaNaArvoreAsync(db, node.Nodes, codFilho, produtoErp, item);
+              await AdicionarEngenhariaNaArvoreAsync(db, node.Nodes, progress, codFilho, produtoErp, item);
           }
         }
       }
@@ -269,12 +281,10 @@ namespace AxionConnect {
               ativo = true,
             };
 
-            db.processos.Add(processo);
-            db.SaveChanges();
+            //db.processos.Add(processo);
+            //db.SaveChanges();
 
-            await Processo.Carregar();
-
-            AtualizarOperacao(produtoErp, operacao, processo.id);
+            //await Processo.Carregar();
 
             // atualizar props
             if (!minhasOps.Contains(processo.codigo_operacao)) {
@@ -311,11 +321,18 @@ namespace AxionConnect {
       });
     }
 
-    private static async Task PercorrerTreeViewAnalisarCompAsync(ContextoDados db, TreeNode node, List<ProdutoErp> _listaProduto) {
+    private static async Task PercorrerTreeViewAnalisarCompAsync(ContextoDados db, TreeNode node, List<ProdutoErp> _listaProduto, IProgress<string> progress) {
       try {
+        if (!Loader._isWorking) {
+          //Toast.Info("Operação cancelada pelo usuário.");
+          return;
+        }
+
         var produtoErp = node.Tag as ProdutoErp;
         if (produtoErp != null) {
           if (!_listaProduto.Any(x => x.Name == produtoErp.Name && x.Referencia == produtoErp.Referencia && x.Configuracao == produtoErp.Configuracao)) {
+            progress.Report($"Analisando Componente:\r\n{produtoErp.Name}");
+
             if (produtoErp.TipoComponente != TipoComponente.ListaMaterial && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca && !produtoErp.Fantasma) {
               var nameDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
               produtoErp.Img3D = produtoErp.TipoComponente == TipoComponente.Montagem ? Properties.Resources.assembly : Properties.Resources.part;
@@ -325,7 +342,7 @@ namespace AxionConnect {
 
             if (node.Nodes.Count > 0) {
               foreach (TreeNode nodeFilho in node.Nodes) {
-                await PercorrerTreeViewAnalisarCompAsync(db, nodeFilho, _listaProduto);
+                await PercorrerTreeViewAnalisarCompAsync(db, nodeFilho, _listaProduto, progress);
               }
             }
           }

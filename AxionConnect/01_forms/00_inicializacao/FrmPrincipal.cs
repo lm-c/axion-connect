@@ -62,7 +62,7 @@ namespace AxionConnect {
       tslModo.Text = string.Empty;
       tslFormAberto.Text = string.Empty;
 
-      //tslUsuario.Text = $"{InfoDefault.UsuarioLogado_Login}";
+      tslUsuario.Text = $"Usuário: {usuario_alocados.model.usuario.login}";
     }
 
     #endregion

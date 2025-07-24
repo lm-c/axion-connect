@@ -102,11 +102,13 @@
     <Reference Include="K4os.Hash.xxHash, Version=1.0.8.0, Culture=neutral, PublicKeyToken=32cd54395057cec3, processorArchitecture=MSIL">
       <HintPath>..\packages\K4os.Hash.xxHash.1.0.8\lib\net462\K4os.Hash.xxHash.dll</HintPath>
     </Reference>
-    <Reference Include="LmCorbieCriptografar">
-      <HintPath>..\..\corbie-ui\LmCorbieUI\bin\Debug\LmCorbieCriptografar.dll</HintPath>
+    <Reference Include="LmCorbieCriptografar, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\LmCorbieUI\LmCorbieUI\bin\Debug\LmCorbieCriptografar.dll</HintPath>
     </Reference>
-    <Reference Include="LmCorbieUI">
-      <HintPath>..\..\corbie-ui\LmCorbieUI\bin\Debug\LmCorbieUI.dll</HintPath>
+    <Reference Include="LmCorbieUI, Version=4.0.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\LmCorbieUI\LmCorbieUI\bin\Debug\LmCorbieUI.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.8.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
@@ -352,6 +354,15 @@
   <ItemGroup>
     <COMReference Include="EModelView">
       <Guid>{578877A6-53CF-4FA1-84D3-781841DC64D5}</Guid>
+      <VersionMajor>25</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="EModelViewMarkup">
+      <Guid>{7C92D35B-115F-4BA0-AA68-72C0538F8053}</Guid>
       <VersionMajor>25</VersionMajor>
       <VersionMinor>0</VersionMinor>
       <Lcid>0</Lcid>

@@ -24,58 +24,14 @@ namespace AxionConnect {
 
     [LarguraColunaGrid(120)]
     [DisplayName("Código Máquina")]
-    public int codigo_maquina { get; set; }
+    public int? codigo_maquina { get; set; }
+
+    [LarguraColunaGrid(120)]
+    [DisplayName("Tipo Operação")]
+    public TipoOperacao tipoOperacao { get; set; }
 
     [LarguraColunaGrid(80)]
     public bool ativo { get; set; }
-
-    public static bool Salvar(processos processo) {
-      try {
-        using (ContextoDados db = new ContextoDados()) {
-          if (processo.id == 0) {
-            if (db.processos.Any(x => x.codigo_operacao == processo.codigo_operacao)) {
-              Toast.Warning("Já existe um registro com este processo vinculado a uma máquina");
-              return false;
-            }
-
-            db.processos.Add(processo);
-            db.SaveChanges();
-
-            Toast.Success("Processo Cadastrado com Sucesso!");
-          } else {
-            if (db.processos.Any((x => x.id != processo.id && x.codigo_operacao == processo.codigo_operacao))) {
-              Toast.Warning("Já existe um registro com este processo vinculado a uma máquina");
-              return false;
-            }
-
-            var modelAlt = db.processos.FirstOrDefault(x => x.id == processo.id);
-            modelAlt.codigo_operacao = processo.codigo_operacao;
-            modelAlt.codigo_maquina = processo.codigo_maquina;
-            modelAlt.ativo = processo.ativo;
-
-            db.SaveChanges();
-
-            Toast.Success("Processo Alterado com Sucesso!");
-          }
-
-          return true;
-        }
-      } catch (Exception ex) {
-        MsgBox.Show("Erro ao Salvar Processo.", "Axion LM Projetos", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        return false;
-      }
-    }
-
-    public static void Excluir(int processo_id) {
-      try {
-        using (ContextoDados db = new ContextoDados()) {
-          db.processos.Remove(db.processos.FirstOrDefault(x => x.id == processo_id));
-          db.SaveChanges();
-        }
-      } catch (Exception ex) {
-        MsgBox.Show("Erro ao Excluir Usuario.", "Axion LM Projetos", MessageBoxButtons.OK, MessageBoxIcon.Error);
-      }
-    }
 
     public static List<processos> SelecionarTodos() {
       var _return = new List<processos>();

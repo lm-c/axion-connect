@@ -1,5 +1,7 @@
 ﻿using eDrawings.Interop.EModelViewControl;
+using EModelViewMarkup;
 using LmCorbieUI;
+using LmCorbieUI.Controls;
 using LmCorbieUI.Design;
 using LmCorbieUI.LmForms;
 using LmCorbieUI.Metodos;
@@ -17,6 +19,8 @@ using static AxionConnect.Api;
 namespace AxionConnect {
   public partial class FrmEngenharia : LmChildForm {
     private EModelViewControl _eDrawingsCtrl;
+    private EModelMarkupControl _markupCtrl;
+
     SortableBindingList<ProdutoErp> _produtos = new SortableBindingList<ProdutoErp>();
     TreeView _arvoreCompleta = new TreeView();
     bool _visualizando3D = false;
@@ -96,24 +100,30 @@ namespace AxionConnect {
 
     private void TxtCodEngenharia_Leave(object sender, EventArgs e) {
       if (long.TryParse(txtCodEngenharia.Text, out long codEngenharia)) {
-        txtCodEngenharia.Enabled = false;
-        btnNovaEngenharia.Enabled = btnSalvar.Enabled = false;
         CarregarEngenhariaAsync(codEngenharia);
       }
     }
 
     private async Task CarregarEngenhariaAsync(long codEngenharia) {
       try {
-        await Processo.Carregar();
+        txtCodEngenharia.Enabled = false;
+        btnNovaEngenharia.Enabled = btnSalvar.Enabled = false;
         _arvoreCompleta.Nodes.Clear();
         trvProduto.Nodes.Clear();
         _produtos = new SortableBindingList<ProdutoErp>();
         dgv.CarregarGrid(_produtos);
 
-        MsgBox.ShowWaitMessage("Carregando componentes do ERP...");
+        //await Loader.ShowDuringOperation(async (progress) => {
+        //  progress.Report("Iniciando leitura do ERP...");
         _produtos = await ProdutoErp.GetComponentsFromERPAsync(_arvoreCompleta, codEngenharia);
+        //});
+
         CarregarGrid();
-        txtCodEngenharia.Enabled = _produtos.Count == 0;
+        if (_produtos.Count == 0) {
+          txtCodEngenharia.Enabled = true;
+          txtCodEngenharia.Text = string.Empty;
+          txtCodEngenharia.Focus();
+        }
         btnNovaEngenharia.Enabled = btnSalvar.Enabled = true;
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao processar o código de engenharia.");
@@ -178,6 +188,12 @@ namespace AxionConnect {
       txtCodEngenharia.Enabled = true;
       txtCodEngenharia.Text = string.Empty;
 
+      txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = false;
+      txtMaquina.SelectedValue = txtOperacao.SelectedValue = null;
+
+      txtTempoOperacao.Text = tempoPadro;
+      txtNumeroOperadores.Text = numOperadorPadrao.ToString();
+
       // limpar labels
       LimparLabels();
 
@@ -189,10 +205,13 @@ namespace AxionConnect {
     }
 
     private void LimparLabels() {
+      lblSmLarg.Text =
+      lblSmCompr.Text =
       lblEspess.Text =
       lblCodDescMat.Text =
       lblCodigoProduto.Text =
       lblPeso.Text =
+      lblNome.Text =
       lblDescricao.Text = string.Empty;
     }
 
@@ -238,6 +257,8 @@ namespace AxionConnect {
 
         AtualizarComponente();
         txtOperacao.Focus();
+
+        CarregarSequenciaOp();
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao atualizar dados Componente");
       }
@@ -246,9 +267,12 @@ namespace AxionConnect {
     private void AtualizarComponente() {
       try {
         lblPeso.Text = "0,000Kg";
+        lblSmLarg.Text =
+        lblSmCompr.Text =
         lblEspess.Text =
         lblCodDescMat.Text =
         lblCodigoProduto.Text =
+        lblNome.Text =
         lblDescricao.Text = string.Empty;
 
         ClearControls();
@@ -265,16 +289,43 @@ namespace AxionConnect {
 
         if (File.Exists(nomeDesenho)) {
           _eDrawingsCtrl.OpenDoc(nomeDesenho, false, false, false, "");
+
+          string nomeProduto = produtoErp.Name;
+          var match = System.Text.RegularExpressions.Regex.Match(nomeProduto, @" - P(\d+)$");
+          if (match.Success) {
+            string paginaProcurada = $"P{match.Groups[1].Value}";
+
+            try {
+              // Percorrer todas as páginas do documento
+              int totalSheets = _eDrawingsCtrl.SheetCount;
+
+              for (int i = 0; i < totalSheets; i++) {
+                string nomeSheet = _eDrawingsCtrl.SheetName[i];
+
+                // Comparar se o nome da sheet corresponde à página procurada
+                if (nomeSheet.Equals(paginaProcurada, StringComparison.OrdinalIgnoreCase)) {
+                  // Navegar para a página encontrada
+                  _eDrawingsCtrl.ShowSheet(i);
+                  //Task.Delay(100);
+
+                  break;
+                }
+              }
+            } catch (Exception ex) {
+              // Log do erro caso ocorra problema ao navegar
+              // MessageBox.Show($"Erro ao navegar para página {paginaProcurada}: {ex.Message}");
+            }
+          } else {
+            _eDrawingsCtrl.ShowSheet(0);
+          }
+
+          this.Refresh();
+
           ptbDesenho.Visible = true;
           _visualizando3D = false;
-          if (File.Exists(nomeDesenho)) {
-            _eDrawingsCtrl.OpenDoc(nomeDesenho, false, false, false, "");
-          }
           ptbDesenho.Image = produtoErp.TipoComponente == TipoComponente.Montagem ? Properties.Resources.assembly : Properties.Resources.part;
           toolTip1.SetToolTip(ptbDesenho, produtoErp.TipoComponente == TipoComponente.Montagem ? "Abrir Conjunto" : "Abrir Peça");
-
           int total = _eDrawingsCtrl.SheetCount;
-
           ptbProximoDesenho.Visible = total > 1;
           ptbZoom.Image = Properties.Resources.zoomfit;
         } else if (File.Exists(produtoErp.PathName)) {
@@ -286,7 +337,7 @@ namespace AxionConnect {
           ptbProximoDesenho.Visible = false;
         } else {
           _eDrawingsCtrl.CloseActiveDoc(produtoErp.PathName);
-          Toast.Info($"Componente Virtual não pode ser aberto no Axion Connect:\r\n{produtoErp.PathName}");
+          Toast.Info($"Produto não encontrado:\r\n{produtoErp.PathName}");
           ptbDesenho.Visible = false;
           ptbZoom.Visible = false;
         }
@@ -328,11 +379,14 @@ namespace AxionConnect {
     }
 
     private void AtualizarInformacoes(ProdutoErp produtoErp) {
+      lblNome.Text = produtoErp.Name;
       lblDescricao.Text = produtoErp.Denominacao;
-      txtSmLarg.Text = produtoErp.SobremetalLarg.ToString("#");
-      txtSmCompr.Text = produtoErp.SobremetalCompr.ToString("#");
+      lblSmLarg.Text = produtoErp.SobremetalLarg.ToString("#");
+      lblSmCompr.Text = produtoErp.SobremetalCompr.ToString("#");
       lblPeso.Text = produtoErp.PesoBruto + " kg";
       lblCodigoProduto.Text = produtoErp.CodProduto;
+
+      CriarMarkupTexto();
 
       if (produtoErp.TipoComponente == TipoComponente.Peca) {
         var espess = produtoErp.Espessura;
@@ -352,6 +406,21 @@ namespace AxionConnect {
         }
       }
     }
+
+    private void CriarMarkupTexto() {
+      try {
+        if (_eDrawingsCtrl == null) {
+          MessageBox.Show("eDrawings não está carregado!");
+          return;
+        }
+
+
+
+      } catch (Exception ex) {
+        MessageBox.Show("Erro ao inserir markup: " + ex.Message);
+      }
+    }
+
 
     private void GetProcess(ProdutoErp produtoErp) {
       try {
@@ -385,10 +454,12 @@ namespace AxionConnect {
             var config = db.configuracao_api.FirstOrDefault();
 
             // salvar engenharia
-            MsgBox.ShowWaitMessage("Criando Engenharia de Produto...");
-            var configApi = configuracao_api.Selecionar();
+            await Loader.ShowDuringOperation(async (progress) => {
+              progress.Report("Criando Engenharia de Produto...");
+              var configApi = configuracao_api.Selecionar();
 
-            await PercorrerTreeViewSalvarEngAsync(db, trvProduto.Nodes[0], configApi);
+              await PercorrerTreeViewSalvarEngAsync(db, trvProduto.Nodes[0], configApi, progress);
+            });
 
             MsgBox.Show("Cadastro de engenharia finalizado com sucesso", "Axion LM Projetos",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -403,13 +474,19 @@ namespace AxionConnect {
       }
     }
 
-    private async Task PercorrerTreeViewSalvarEngAsync(ContextoDados db, TreeNode node, configuracao_api configApi) {
+    private async Task PercorrerTreeViewSalvarEngAsync(ContextoDados db, TreeNode node, configuracao_api configApi, IProgress<string> progress) {
       try {
+        if (!Loader._isWorking) {
+          MsgBox.Show($"Cadastro de engenharia cancelado pelo usuário.",
+            "Ação não Permitida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+          return;
+        }
+
         var produtoErp = node.Tag as ProdutoErp;
         if (produtoErp != null) {
           if (produtoErp.TipoComponente != TipoComponente.ListaMaterial && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
             foreach (TreeNode nodeFilho in node.Nodes) {
-              await PercorrerTreeViewSalvarEngAsync(db, nodeFilho, configApi);
+              await PercorrerTreeViewSalvarEngAsync(db, nodeFilho, configApi, progress);
             }
 
             var produto = _produtos.ToList().FirstOrDefault(x => produtoErp.Name == x.Name && produtoErp.Referencia == x.Referencia && produtoErp.Configuracao == x.Configuracao);
@@ -440,23 +517,13 @@ namespace AxionConnect {
                 TreeNode nodeFilho = (TreeNode)list[i];
                 var itemFilho = nodeFilho.Tag as ProdutoErp;
                 if (itemFilho != null) {
+
                   var classificacao = itemFilho.CodComponente.StartsWith("10") || itemFilho.CodComponente.StartsWith("20") ? 5 : itemFilho.TipoComponente == TipoComponente.Montagem ? 3 : 4;
 
-                  double qtd = itemFilho.TipoComponente != TipoComponente.ListaMaterial ? itemFilho.Quantidade : 1;
-                  double compr = itemFilho.TipoComponente != TipoComponente.ListaMaterial ? 0 : itemFilho.Comprimento + itemFilho.SobremetalCompr;
-
-                  //if (itemFilho.TipoComponente == TipoComponente.ListaMaterial) {
-                  //  switch (itemFilho.UnidadeMedida) {
-                  //    case "M":
-                  //    compr = compr / 1000;
-                  //    break;
-                  //    case "KG":
-                  //    qtd = produtoErp.PesoBruto; // pego do pai pois lista de corte sempre terá um produto apenas
-                  //    break;
-                  //    default:
-                  //    break;
-                  //  }
-                  //}
+                  double qtd = itemFilho.Quantidade;
+                  double espessura = itemFilho.Espessura;
+                  double largura = itemFilho.Largura + itemFilho.SobremetalLarg;
+                  double compr = itemFilho.Comprimento + itemFilho.SobremetalCompr;
 
                   var componenteEng = new ComponenteEng {
                     seqComponente = index,
@@ -464,8 +531,8 @@ namespace AxionConnect {
                     quantidade = qtd,
                     itemKanban = 0,
                     comprimento = compr,
-                    largura = itemFilho.TipoComponente != TipoComponente.ListaMaterial ? 0 : itemFilho.Largura + itemFilho.SobremetalLarg,
-                    espessura = itemFilho.TipoComponente != TipoComponente.ListaMaterial ? 0 : itemFilho.Espessura,
+                    largura = largura,
+                    espessura = espessura,
                     percQuebra = 0,
                     codClassificacaoInsumo = classificacao, // 1 = produto, 3 = subconjunto, 4 = peças e 5 = insumo comprado
                   };
@@ -483,21 +550,24 @@ namespace AxionConnect {
                   Toast.Warning($"Processo '{proc.processo_id}' não encontrado no Axion.");
                   continue;
                 }
+
                 var operacaoEng = new OperacaoEng {
                   seqOperacao = seqOperacao,
                   codOperacao = processo.codOperacao,
                   abreviaturaOperacao = processo.abreviatura,
                   numOperadores = proc.qtd_operador,
                   codFaseOperacao = processo.faseProducao,
-                  codMascaraMaquina = processo.mascaraMaquina.Replace(".", ""),
+                  codMascaraMaquina = processo.mascaraMaquina?.Replace(".", ""),
                   centroCusto = processo.centroCusto,
                   tempoPadraoOperacao = proc.tempo.FormatarHoraDouble(),
                   tempoPreparacaoOperacao = 0,
+                  tipoOperacao = processo.tipoOperacao,
                 };
                 engenharia.operacoes.Add(operacaoEng);
               }
             }
 
+            progress.Report($"Cadastrando Engenharia:\r\n{produtoErp.CodProduto} - {produtoErp.Denominacao}");
             await Api.CadastrarEngenhariaAsync(db, engenharia);
 
             DataGridViewRow row = dgv.Grid.Rows.ToDynamicList().Where(x => ((ProdutoErp)x.DataBoundItem).CodProduto == produto?.CodProduto).FirstOrDefault();
@@ -505,7 +575,9 @@ namespace AxionConnect {
               var startIndex = row.Index;
               if (startIndex < dgv.Grid.Rows.Count) {
                 if (startIndex < dgv.Grid.FirstDisplayedScrollingRowIndex || startIndex > dgv.Grid.FirstDisplayedScrollingRowIndex + dgv.Grid.DisplayedRowCount(false) - 1) {
-                  dgv.Grid.FirstDisplayedScrollingRowIndex = startIndex;
+                  UIThreadHelper.Invoke(dgv.Grid, () => {
+                    dgv.Grid.FirstDisplayedScrollingRowIndex = startIndex;
+                  });
                 }
 
                 row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
@@ -514,30 +586,10 @@ namespace AxionConnect {
           }
         }
       } catch (Exception ex) {
-        Toast.Error($"Erro ao gerar Engenharia Item: {((ProdutoErp)node.Tag).Name}\n\n{ex.Message}");
+        Invoke(new MethodInvoker(() => {
+          Toast.Error($"Erro ao gerar Engenharia.\n\nItem: {((ProdutoErp)node.Tag).Name}\n\n{ex.Message}");
+        }));
       }
-    }
-
-    private void TxtSmLarg_Leave(object sender, EventArgs e) {
-      if (dgv.Grid.CurrentRow == null) {
-        return;
-      }
-
-      var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
-      if (produtoERP != null && !string.IsNullOrEmpty(txtSmLarg.Text))
-        produtoERP.SobremetalLarg = Convert.ToDouble(txtSmLarg.Text);
-      else produtoERP.SobremetalLarg = 0;
-    }
-
-    private void TxtSmCompr_Leave(object sender, EventArgs e) {
-      if (dgv.Grid.CurrentRow == null) {
-        return;
-      }
-
-      var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
-      if (produtoERP != null && !string.IsNullOrEmpty(txtSmCompr.Text))
-        produtoERP.SobremetalCompr = Convert.ToDouble(txtSmCompr.Text);
-      else produtoERP.SobremetalCompr = 0;
     }
 
     private void ClearControls() {
@@ -545,6 +597,7 @@ namespace AxionConnect {
     }
 
     private void CarregarGrid() {
+      dgv.RowIndexChanged -= Dgv_RowIndexChanged;
       dgv.CarregarGrid(_produtos);
 
       try {
@@ -561,36 +614,46 @@ namespace AxionConnect {
             if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
               ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
               //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corErro;
-            } 
+            }
             //else
-              //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
+            //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
           }
         }
       } catch (Exception ex) {
         Toast.Error("Erro ao verificar pendencias de processos. \r\n" + ex.Message);
       } finally { MsgBox.CloseWaitMessage(); }
+      dgv.RowIndexChanged += Dgv_RowIndexChanged;
     }
 
     private void TxtOperacao_SelectedValueChanched(object sender, EventArgs e) {
       try {
         txtMaquina.SelectedValue = null;
         if (txtOperacao.SelectedValue != null) {
-          var idOp = (int)txtOperacao.SelectedValue;
 
-          var lists = Processo.ListaProcessos
-              .Where(x => x.codOperacao == idOp)
+          var idOp = (int)txtOperacao.SelectedValue;
+          var op = Processo.ListaOperacoesERP.Where(x => x.codOperacao == idOp).FirstOrDefault();
+
+          if (op.tipo == "Interno") {
+            txtMaquina.Enabled = true;
+            var lists = Processo.ListaProcessos
+              .Where(x => x.codOperacao == idOp && x.tipoOperacao == TipoOperacao.Interna)
               .Select(x => new Z_Padrao {
-                Codigo = x.codMaquina,
+                Codigo = (int)x.codMaquina,
                 Descricao = $"{x.codMaquina} - {x.descrMaquina}",
               })
               .ToList()
               .OrderBy(x => x.Codigo);
 
-          txtMaquina.CarregarComboBox(lists);
+            txtMaquina.CarregarComboBox(lists);
 
-          if (lists.Count() == 1)
+            //if (lists.Count() == 1)
             txtMaquina.SelectedValue = lists.FirstOrDefault().Codigo;
+          } else {
+            txtMaquina.Enabled = false;
+            txtMaquina.CarregarComboBox(null);
+          }
         } else {
+          txtMaquina.Enabled = true;
           txtMaquina.CarregarComboBox(null);
         }
       } catch (Exception ex) {
@@ -605,7 +668,7 @@ namespace AxionConnect {
           return;
         }
 
-        txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = true;
+        txtOperacao.CampoObrigatorio = true;
 
         if (Controles.PossuiCamposInvalidos(lmPanelOP)) {
           txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = false;
@@ -613,9 +676,20 @@ namespace AxionConnect {
         }
 
         var idOp = (int)txtOperacao.SelectedValue;
-        var idMq = (int)txtMaquina.SelectedValue;
+        var op = Processo.ListaOperacoesERP.Where(x => x.codOperacao == idOp).FirstOrDefault();
 
-        var proc = Processo.ListaProcessos.FirstOrDefault(x => x.codOperacao == idOp);
+        if (op.tipo == "Interno") {
+          txtMaquina.CampoObrigatorio = true;
+        }
+
+        if (Controles.PossuiCamposInvalidos(lmPanelOP)) {
+          txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = false;
+          return;
+        }
+
+        var idMq = (int?)txtMaquina.SelectedValue;
+
+        var proc = Processo.ListaProcessos.FirstOrDefault(x => x.codOperacao == idOp && x.codMaquina == idMq);
 
         if (flpOperacoes.Controls.OfType<CardOperacao>().Any(x => ((produto_erp_operacao)x.Tag).processo_id == proc.codAxion)) {
           Toast.Warning("Esta Operação com esta Máquina já foi inserida");
@@ -633,7 +707,7 @@ namespace AxionConnect {
           tempo = !string.IsNullOrEmpty(txtTempoOperacao.Text) ? txtTempoOperacao.Text.FormatarHora() : "00:01",
         };
 
-        produto_erp_operacao.Salvar(processo);
+        // produto_erp_operacao.Salvar(processo);
 
         CardInsert(processo);
 
@@ -652,7 +726,7 @@ namespace AxionConnect {
     private void AtualizarProcessos() {
       var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
 
-      produto_erp_operacao.ExcluirProcessoProduto(produtoERP);
+      //produto_erp_operacao.ExcluirProcessoProduto(produtoERP);
 
       var operacoes = flpOperacoes.Controls
           .OfType<CardOperacao>()
@@ -663,17 +737,18 @@ namespace AxionConnect {
           produto_erp_operacao operacao = operacoes[i - 1];
           operacao.sequencia = i;
 
-          produto_erp_operacao.Salvar(operacao);
+          // produto_erp_operacao.Salvar(operacao);
         }
         produtoERP.Operacoes = operacoes;
 
         ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoRevisar);
         ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
-      } else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
-        produtoERP.Operacoes = new List<produto_erp_operacao>();
-        ProdutoErp.AdicionarPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
-        //dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
       }
+      //else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
+      //  produtoERP.Operacoes = new List<produto_erp_operacao>();
+      //  ProdutoErp.AdicionarPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
+      //  //dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
+      //}
 
       Toast.Success("Processo atualizado com sucesso!");
     }
@@ -801,6 +876,7 @@ namespace AxionConnect {
     private void PnlProximoDesenho_Click(object sender, EventArgs e) {
       int total = _eDrawingsCtrl.SheetCount;
       int atual = _eDrawingsCtrl.CurrentSheetIndex;
+      string atualNome = _eDrawingsCtrl.SheetName[atual];
 
       int proxima = atual + 1;
       if (proxima >= total)
@@ -831,5 +907,99 @@ namespace AxionConnect {
         _eDrawingsCtrl.ShowToolbar(true);
       }
     }
+
+    private void FrmEngenharia_SizeChanged(object sender, EventArgs e) {
+      if (pnlCodigo.Top > 130) {
+        flpInfos.Height = 160;
+      } else if (pnlCodigo.Top > 50) {
+        flpInfos.Height = 81;
+      } else if (pnlCodigo.Top > 30) {
+        flpInfos.Height = 60;
+      } else if (pnlCodigo.Top > 15) {
+        flpInfos.Height = 39;
+      }
+    }
+
+    #region Sequencia Operacional
+
+    private void CarregarSequenciaOp() {
+      if (dgv.Grid.CurrentRow != null) {
+        try {
+          flpEtapaConsumo.Controls.Clear();
+
+          var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
+
+          CriarControlesGrupoEtapas(produtoErp);
+
+        } catch (Exception ex) {
+          LmException.ShowException(ex, "Erro ao carregar sequência operacional");
+        }
+      }
+    }
+
+    // Criar Grupo de Etapas
+    private void CriarControlesGrupoEtapas(ProdutoErp produtoErp) {
+      try {
+        var flpProcNaoPossui = new LmPanelFlow {
+          Name = "flpOpNaoPossui",
+          Dock = DockStyle.Fill
+        };
+
+        var grupo = new LmGroupBox {
+          Name = "gpbOpNaoPossui",
+          Size = new System.Drawing.Size(flpEtapaConsumo.Width - 24, 69),
+          TabIndex = 0,
+          TabStop = false,
+          Text = "Não Definida",
+        };
+        grupo.Controls.Add(flpProcNaoPossui);
+
+        flpEtapaConsumo.Controls.Add(grupo);
+
+        if (produtoErp.Operacoes.Count > 0) {
+          foreach (var proc in produtoErp.Operacoes) {
+            var operacao = Processo.ListaProcessos.FirstOrDefault(x => x.codAxion == proc.processo_id);
+
+            var flpProc = new LmPanelFlow {
+              Name = "flpProc" + proc.sequencia,
+              Dock = DockStyle.Fill
+            };
+
+            var ctrlOp = new LmGroupBox {
+              Name = "gpbOp" + proc.sequencia,
+              Size = new System.Drawing.Size(flpEtapaConsumo.Width - 24, 69),
+              TabIndex = 0,
+              TabStop = false,
+              Text = $"{operacao.codOperacao} - {operacao.descrOperacao}"
+            };
+
+            flpEtapaConsumo.Controls.Add(ctrlOp);
+          }
+        }
+
+        System.Collections.IList list = trvProduto.Nodes[0].Nodes;
+        for (int i = 0; i < list.Count; i++) {
+          TreeNode nodeFilho = (TreeNode)list[i];
+          LmLabel lblComp = new LmLabel {
+            Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right))),
+            BackColor = System.Drawing.Color.Transparent,
+            FontSize = LmCorbieUI.Design.LmLabelSize.Small,
+            ForeColor = System.Drawing.Color.Red,
+            Location = new System.Drawing.Point(3, 3),
+            Margin = new System.Windows.Forms.Padding(3),
+            Name = "lblComp" + (i + 1),
+            Size = new System.Drawing.Size(356, 15),
+            TabIndex = 75,
+            Text = nodeFilho.Text,
+            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+          };
+          flpEtapaConsumo.Controls["gpbOpNaoPossui"].Controls["flpOpNaoPossui"].Controls.Add(lblComp);
+        }
+      } catch (Exception ex) {
+        LmException.ShowException(ex, "Erro ao criar grupo de etapas");
+      }
+    }
+
+    #endregion
   }
 }

@@ -22,6 +22,11 @@ namespace AxionConnect {
     Destino = 1,
   }
 
+  public enum TipoOperacao {
+    Interna = 0,
+    Externa = 1,
+  }
+
   public enum TipoLogEngenharia {
     [Description("Duplicação de Produto")]
     DuplicacaoProduto = 0,

@@ -32,7 +32,7 @@ namespace AxionConnect {
 
     [DisplayName("Código Máquina")]
     [LarguraColunaGrid(120)]
-    public int codMaquina { get; set; }
+    public int? codMaquina { get; set; }
 
     [DisplayName("Descrição Máquina")]
     [LarguraColunaGrid(150)]
@@ -44,7 +44,7 @@ namespace AxionConnect {
 
     [DisplayName("Tipo")]
     [LarguraColunaGrid(100)]
-    public string tipo { get; set; }
+    public TipoOperacao tipoOperacao { get; set; }
 
     [DisplayName("Cenytro de Custo")]
     [LarguraColunaGrid(100)]
@@ -65,7 +65,6 @@ namespace AxionConnect {
 
         ListaOperacoesERP = await Api.GetOpsAsync();
         ListaMaquinasERP = await Api.GetMaquinasAsync();
-
         var procs = processos.SelecionarTodos();
 
         foreach (var processo in procs) {
@@ -77,33 +76,34 @@ namespace AxionConnect {
             codOperacao = operacao.codOperacao,
             abreviatura = operacao.abreviatura,
             descrOperacao = operacao.descricao.Replace("\\", "_").Replace("/", "_"),
-            descrMaquina = maquina.descricao.Replace("\\", "_").Replace("/", "_"),
-            mascaraMaquina = maquina.mascara,
-            codMaquina = maquina.codMaquina,
-            tipo = operacao.tipo,
-            centroCusto = maquina.centroCusto,
+            descrMaquina = maquina?.descricao.Replace("\\", "_").Replace("/", "_"),
+            mascaraMaquina = maquina?.mascara,
+            codMaquina = maquina?.codMaquina,
+            tipoOperacao = operacao.tipo == "Interno" ? TipoOperacao.Interna : TipoOperacao.Externa,
+            centroCusto = maquina?.centroCusto,
             faseProducao = operacao.faseProducao ?? 0, // Default para 0 se for nulo
           });
         }
-        ListaProcessos = ListaProcessos.OrderByDescending(x => x.tipo).ThenBy(x => x.codOperacao).ToList();
+
+        foreach (var operacao in ListaOperacoesERP.Where(x=> x.tipo == "Externo")) {
+          //var operacao = ListaOperacoesERP.FirstOrDefault(x => x.codOperacao == processo.codigo_operacao);
+          ListaProcessos.Add(new Processo {
+            codAxion = operacao.codOperacao,
+            codOperacao = operacao.codOperacao,
+            abreviatura = operacao.abreviatura,
+            descrOperacao = operacao.descricao.Replace("\\", "_").Replace("/", "_"),
+            descrMaquina = null,
+            mascaraMaquina = null,
+            codMaquina =null,
+            tipoOperacao =  TipoOperacao.Externa,
+            centroCusto = null,
+            faseProducao = operacao.faseProducao ?? 0, // Default para 0 se for nulo
+          });
+        }
+        ListaProcessos = ListaProcessos.OrderByDescending(x => x.descrOperacao).ToList();
       } catch (Exception ex) {
         Toast.Error("Erro ao Selecionar Processos");
       }
-    }
-
-    public static async Task<SortableBindingList<ProdutoErp>> GetProdutos() {
-      var _listaProduto = new List<ProdutoErp>();
-
-      try {
-        MsgBox.ShowWaitMessage("Lendo componentes...");
-
-      } catch (Exception ex) {
-        MsgBox.Show($"Erro ao carregar componentes.\n\n{ex.Message}", "Axion LM Projetos",
-            MessageBoxButtons.OK, MessageBoxIcon.Error);
-      } finally {
-        MsgBox.CloseWaitMessage();
-      }
-      return new SortableBindingList<ProdutoErp>(_listaProduto);
     }
   }
 }

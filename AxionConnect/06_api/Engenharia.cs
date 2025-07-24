@@ -26,6 +26,7 @@ namespace AxionConnect {
 
     internal class ComponenteEng {
       public int seqComponente { get; set; }
+      public int seqOperacional { get; set; }
       public string codInsumo { get; set; }
       public double quantidade { get; set; }
       public int itemKanban { get; set; }
@@ -49,6 +50,7 @@ namespace AxionConnect {
       public double tempoPadraoOperacao { get; set; }
       public double tempoPreparacaoOperacao { get; set; }
       public string centroCusto { get; set; }
+      public TipoOperacao tipoOperacao { get; set; }
     }
 
     internal static async Task<bool> CadastrarEngenhariaAsync(ContextoDados db, Engenharia engenharia) {
@@ -57,6 +59,7 @@ namespace AxionConnect {
 
         var client = Api.GetClient(modulo: "ppcppadrao", endpoint: $"pendenciaEngenharia");
         var request = Api.CreateRequest(Method.PUT);
+        var centroCusto = engenharia.operacoes.Count > 0 ? engenharia.operacoes[0].centroCusto : string.Empty;
 
         var bodyObject = "" +
           "{" +
@@ -65,6 +68,7 @@ namespace AxionConnect {
              $"\"codClassificacao\": {engenharia.codClassificacao}," +
              $"\"nomeArquivoDesenhoEng\": \"{engenharia.nomeArquivoDesenhoEng}\"," +
              $"\"codProduto\": \"{engenharia.codProduto}\"," +
+             // $"\"centroCusto\": \"{centroCusto}\"," +
              $"\"engenhariaFantasma\": {engenharia.engenhariaFantasma.ToString().ToLower()}," +
              $"\"descEngenhariaFantasma\": \"{engenharia.descEngenhariaFantasma}\"," +
 
@@ -80,6 +84,7 @@ namespace AxionConnect {
               $"\"espessura\": {componente.espessura.ToString().Replace(",", ".")}," +
               $"\"percQuebra\": {componente.percQuebra.ToString().Replace(",", ".")}," +
               $"\"codClassificacaoInsumo\": {componente.codClassificacaoInsumo}," +
+              // $"\"centroCusto\": \"{centroCusto}\"," +
               $"\"itemKanban\": {componente.itemKanban}" +
               "},";
         }
@@ -92,9 +97,15 @@ namespace AxionConnect {
           bodyObject += "{" +
               $"\"seqOperacao\": {operacao.seqOperacao}," +
               $"\"codOperacao\": {operacao.codOperacao}," +
+              // $"\"codOperacao\": 22," +
               $"\"numOperadores\": {operacao.numOperadores}," +
               $"\"codFaseOperacao\": {operacao.codFaseOperacao}," +
-              $"\"codMascaraMaquina\": \"{operacao.codMascaraMaquina}\"," +
+
+               (operacao.tipoOperacao == TipoOperacao.Externa
+               ? $"\"maquina\": \"{operacao.codMascaraMaquina}\","                 // utiliza tela de configuação de processo/máquina (Customizada)
+               : $"\"codMascaraMaquina\": \"{operacao.codMascaraMaquina}\",") +
+              // $"\"maquina\": \"112000\"," +
+
               $"\"tempoPadraoOperacao\": {operacao.tempoPadraoOperacao.ToString().Replace(",", ".")}," +
               $"\"tempoPreparacaoOperacao\": {operacao.tempoPreparacaoOperacao.ToString().Replace(",", ".")}" +
               "},";
@@ -109,7 +120,7 @@ namespace AxionConnect {
         if (response.IsSuccessful) {
           var responseData = response.Content;
           jsonObject = JObject.Parse(responseData);
-         
+
           return true;
         } else {
           var errorResponse = JsonConvert.DeserializeObject<List<ApiErrorResponse>>(response.Content);
@@ -143,6 +154,7 @@ namespace AxionConnect {
 
             componentes = jsonObject["componentes"]?.Select(c => new ComponenteEng {
               seqComponente = c["seqComponente"]?.ToObject<int>() ?? 0,
+              seqOperacional = !string.IsNullOrEmpty(jsonObject["seqOperacional"]?.ToString()) ? Convert.ToInt32(jsonObject["seqOperacional"]?.ToString()) : 0,
               codInsumo = c["codItem"]?.ToString(),
               quantidade = c["quantidade"]?.ToObject<double>() ?? 0,
               centroCusto = c["centroCusto"]?.ToString(),
@@ -172,76 +184,6 @@ namespace AxionConnect {
       }
 
       return _return;
-    }
-
-    internal static async Task<string> DuplicarItemGenericoAsync(ContextoDados db, ItemGenerico itemGenerico) {
-      var configApi = configuracao_api.Selecionar();
-
-      try {
-
-        var mascara = itemGenerico.tipoDocumento == TipoDocumento.Peca ? configApi.mascara_peca : configApi.mascara_conjunto;
-
-        var codigo = string.Empty;
-        var mascara_ent = mascara;
-        var mascara_sai = mascara;
-        var descricao = itemGenerico.nome;
-        var pesoBruto = itemGenerico.pesoBruto;
-        var pesoLiquido = itemGenerico.pesoLiquido;
-        var unidadeMedida = itemGenerico.unidadeMedida;
-
-
-        JObject jsonObject = new JObject();
-
-        var client = Api.GetClient(modulo: "ppcppadrao", endpoint: $"duplicarItemImportacao");
-        var request = Api.CreateRequest(Method.PUT);
-        var response = await client.ExecuteAsync(request);
-
-        var bodyObject = "" +
-          "{" +
-             $"\"tipoModulo\": \"E\"," +
-             $"\"codigoItem\": null," +
-             $"\"descricaoItem\": \"{descricao}\"," +
-             $"\"descricaoCompleta\": \"{descricao}\"," +
-             $"\"nivelMascaraEntrada\": \"{mascara_ent}\"," +
-             $"\"nivelMascaraSaida\": \"{mascara_sai}\"," +
-             $"\"pesoLiquido\": {pesoLiquido.ToString().Replace(",", ".")}," +
-             $"\"pesoBruto\": {pesoBruto.ToString().Replace(",", ".")}," +
-             $"\"unidadeMedida\": \"{unidadeMedida}\"" +
-           "}";
-
-        request.AddJsonBody(bodyObject);
-
-        response = await client.ExecuteAsync(request);
-
-        if (response.IsSuccessful) {
-          var responseData = response.Content;
-          jsonObject = JObject.Parse(responseData);
-          codigo = (string)jsonObject["codigo"];
-
-          if (codigo.EndsWith("9999")) {
-            var splitMascEnt = mascara_ent.Split('.');
-            splitMascEnt[splitMascEnt.Length - 1] = (Convert.ToInt32(splitMascEnt[splitMascEnt.Length - 1]) + 1).ToString("00");
-
-            if (itemGenerico.tipoDocumento == TipoDocumento.Peca) {
-              configApi.mascara_peca = string.Join(".", splitMascEnt);
-            } else {
-              configApi.mascara_conjunto = string.Join(".", splitMascEnt);
-            }
-
-            db.SaveChanges();
-          }
-
-          return codigo;
-        } else {
-          var errorResponse = JsonConvert.DeserializeObject<List<ApiErrorResponse>>(response.Content);
-          var errorMessage = errorResponse?.FirstOrDefault()?.mensagem ?? "Erro ao Duplicar Produto";
-          throw new Exception($"Erro: {response.StatusCode}\r\n{errorMessage}");
-        }
-      } catch (Exception ex) {
-        Toast.Error($"Erro ao Duplicar Produto: {ex.Message}");
-        return string.Empty;
-      }
-
     }
   }
 }

@@ -14,7 +14,7 @@ namespace AxionConnect {
     public DbSet<perfis> perfis { get; set; }
     public DbSet<processos> processos { get; set; }
     public DbSet<produto_erp> produto_erp { get; set; }
-    public DbSet<produto_erp_operacao> produto_erp_operacao { get; set; }
+    //public DbSet<produto_erp_operacao> produto_erp_operacao { get; set; }
     public DbSet<templates> templates { get; set; }
     public DbSet<usuarios> usuarios { get; set; }
     public DbSet<usuario_alocados> usuario_alocados { get; set; }
