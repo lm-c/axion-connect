@@ -121,12 +121,13 @@
     <value>17, 17</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="btnRemover.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+  <data name="btnMover.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
-        iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
-        YQUAAACUSURBVDhP7dLNDUFBFIbhqYFClCJENCCxk4iFW4OlAqwUIBSgBJYUIix53+TcG3KHacCXPMnJ
-        +clsJmUyxB3P8MAA2XQxwRRnHDAPO5zgzJ0OmlxQv1DibpMeZqgK3HH3I1fkXnjnTiv14QpHbIO1veJh
-        Hxssg7W9/yEW2GMdrO19PfSrOfzFr9fKGDfkDuRsBJLSCzoJZVOeTe7PAAAAAElFTkSuQmCC
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+        wQAADsEBuJFr7QAAAJ1JREFUOE/V0LEKgkAYwPErcIiGihYLxCF6zl6goVfoOXoAcWooggYHiaClqTXU
+        /xcad/gV6lR/+CEefod35i/ql8/O3bCB93rrUF6KMJWFpg0QoNpAnLCA2go7nPGAPWhL4cNpjAzagGYP
+        +cN3E2gffnLAEE5rxLjiCW1QXDDD13oYIYQ9nGCJVlXDR8xloW13bFE7c9Oc2/61jCkACos9FQadhJ4A
+        AAAASUVORK5CYII=
 </value>
   </data>
 </root>

@@ -235,6 +235,12 @@
     <Compile Include="08_user_controls\CardOperacao.Designer.cs">
       <DependentUpon>CardOperacao.cs</DependentUpon>
     </Compile>
+    <Compile Include="08_user_controls\CardProduto.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="08_user_controls\CardProduto.Designer.cs">
+      <DependentUpon>CardProduto.cs</DependentUpon>
+    </Compile>
     <Compile Include="08_user_controls\EDrawingsHost.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -250,6 +256,12 @@
     <Compile Include="01_forms\01_engenharia_produto\FrmEngenharia.Designer.cs">
       <DependentUpon>FrmEngenharia.cs</DependentUpon>
     </Compile>
+    <Compile Include="01_forms\FrmSeqSel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="01_forms\FrmSeqSel.Designer.cs">
+      <DependentUpon>FrmSeqSel.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="01_forms\00_inicializacao\FrmLogin.resx">
@@ -258,8 +270,14 @@
     <EmbeddedResource Include="01_forms\00_inicializacao\FrmPrincipal.resx">
       <DependentUpon>FrmPrincipal.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="01_forms\FrmSeqSel.resx">
+      <DependentUpon>FrmSeqSel.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="08_user_controls\CardOperacao.resx">
       <DependentUpon>CardOperacao.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="08_user_controls\CardProduto.resx">
+      <DependentUpon>CardProduto.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="08_user_controls\EDrawingsUserControl.resx">
       <DependentUpon>EDrawingsUserControl.cs</DependentUpon>
@@ -292,6 +310,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="01_forms\02_auxiliar_forms\" />
     <Folder Include="03_metodos\" />
   </ItemGroup>
   <ItemGroup>

@@ -111,6 +111,9 @@ namespace AxionConnect {
     [Browsable(false)]
     public double SobremetalCompr { get; set; } = 0;
 
+    [Browsable(false)]
+    public int SeqOperacional { get; set; } 
+
     //[Browsable(false)]
     //public bool CadastrarProdutoErp { get; set; }
 
@@ -201,6 +204,7 @@ namespace AxionConnect {
             Largura = compEng.largura * 1000,
             Comprimento = compEng.comprimento * 1000,
             Fantasma = false,
+            SeqOperacional = compEng != null ? compEng.seqOperacional : 1,
           };
 
           int imgIndex = produtoPai.TipoListaMaterial == TipoListaMaterial.Chapa ? 3 : 4;
@@ -232,6 +236,7 @@ namespace AxionConnect {
           SobremetalCompr = prod.sobremetal_comprimento,
           Fantasma = prod.fantasma,
           TipoListaMaterial = prod.espessura > 0 && prod.largura > 0 ? TipoListaMaterial.Chapa : TipoListaMaterial.Soldagem,
+          SeqOperacional = compEng != null ? compEng.seqOperacional : 1,
         };
 
         //produto_erp_operacao.SelecionarProcessoProduto(produtoErp);

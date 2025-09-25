@@ -173,6 +173,7 @@
       this.txtCodEngenharia.Valor_Decimais = ((short)(0));
       this.txtCodEngenharia.WaterMarkColor = System.Drawing.Color.FromArgb(((int)(((byte)(95)))), ((int)(((byte)(95)))), ((int)(((byte)(95)))));
       this.txtCodEngenharia.WaterMarkFont = new System.Drawing.Font("Segoe UI", 8.75F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Pixel);
+      this.txtCodEngenharia.Enter += new System.EventHandler(this.TxtCodEngenharia_Enter);
       this.txtCodEngenharia.Leave += new System.EventHandler(this.TxtCodEngenharia_Leave);
       // 
       // tableLayoutPanel1

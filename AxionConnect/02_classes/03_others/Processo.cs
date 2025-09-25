@@ -54,6 +54,9 @@ namespace AxionConnect {
     [DisplayName("Fase produção")]
     [LarguraColunaGrid(120)]
     public int faseProducao { get; set; }
+    
+    [Browsable(false)]
+    public int sequencia { get; set; }
 
     public static List<Processo> ListaProcessos { get; set; } = new List<Processo>();
     public static List<Api.Operacao> ListaOperacoesERP { get; set; } = new List<Api.Operacao>();

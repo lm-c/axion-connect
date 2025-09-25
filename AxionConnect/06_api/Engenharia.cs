@@ -4,8 +4,10 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using static AxionConnect.Api;
 
 namespace AxionConnect {
   internal partial class Api {
@@ -68,7 +70,7 @@ namespace AxionConnect {
              $"\"codClassificacao\": {engenharia.codClassificacao}," +
              $"\"nomeArquivoDesenhoEng\": \"{engenharia.nomeArquivoDesenhoEng}\"," +
              $"\"codProduto\": \"{engenharia.codProduto}\"," +
-             // $"\"centroCusto\": \"{centroCusto}\"," +
+             $"\"centroCustoDestino\": \"{centroCusto}\"," +
              $"\"engenhariaFantasma\": {engenharia.engenhariaFantasma.ToString().ToLower()}," +
              $"\"descEngenhariaFantasma\": \"{engenharia.descEngenhariaFantasma}\"," +
 
@@ -77,14 +79,15 @@ namespace AxionConnect {
         foreach (var componente in engenharia.componentes) {
           bodyObject += "{" +
               $"\"seqComponente\": {componente.seqComponente}," +
+              $"\"seqOperacaoConsumo\": {componente.seqOperacional}," +
               $"\"codInsumo\": \"{componente.codInsumo}\"," +
-              $"\"quantidade\": {componente.quantidade.ToString().Replace(",", ".")}," +
-              $"\"comprimento\": {componente.comprimento.ToString().Replace(",", ".")}," +
-              $"\"largura\": {componente.largura.ToString().Replace(",", ".")}," +
-              $"\"espessura\": {componente.espessura.ToString().Replace(",", ".")}," +
-              $"\"percQuebra\": {componente.percQuebra.ToString().Replace(",", ".")}," +
+              $"\"quantidade\": {componente.quantidade.ToString("0.000").Replace(",", ".")}," +
+              $"\"comprimento\": {componente.comprimento.ToString("0.000").Replace(",", ".")}," +
+              $"\"largura\": {componente.largura.ToString("0.000").Replace(",", ".")}," +
+              $"\"espessura\": {componente.espessura.ToString("0.000").Replace(",", ".")}," +
+              $"\"percQuebra\": {componente.percQuebra.ToString("0.000").Replace(",", ".")}," +
               $"\"codClassificacaoInsumo\": {componente.codClassificacaoInsumo}," +
-              // $"\"centroCusto\": \"{centroCusto}\"," +
+              $"\"centroCustoDestino\": \"{centroCusto}\"," +
               $"\"itemKanban\": {componente.itemKanban}" +
               "},";
         }
@@ -101,9 +104,9 @@ namespace AxionConnect {
               $"\"numOperadores\": {operacao.numOperadores}," +
               $"\"codFaseOperacao\": {operacao.codFaseOperacao}," +
 
-               (operacao.tipoOperacao == TipoOperacao.Externa
-               ? $"\"maquina\": \"{operacao.codMascaraMaquina}\","                 // utiliza tela de configuação de processo/máquina (Customizada)
-               : $"\"codMascaraMaquina\": \"{operacao.codMascaraMaquina}\",") +
+               (operacao.tipoOperacao != TipoOperacao.Externa
+               ? $"\"codMascaraMaquina\": \"{operacao.codMascaraMaquina}\","                 // utiliza tela de configuação de processo/máquina (Customizada)
+               : $"") +
               // $"\"maquina\": \"112000\"," +
 
               $"\"tempoPadraoOperacao\": {operacao.tempoPadraoOperacao.ToString().Replace(",", ".")}," +
@@ -133,6 +136,7 @@ namespace AxionConnect {
 
     }
 
+
     internal static async Task<Engenharia> GetEngenhariaAsync(string codigo) {
       Engenharia _return = null;
 
@@ -148,36 +152,72 @@ namespace AxionConnect {
 
           _return = new Engenharia {
             descricaoProduto = jsonObject["descricao"]?.ToString(),
-            codClassificacao = jsonObject["codClassificacao"]?.ToObject<int>() ?? 0,
-            statusEngenharia = jsonObject["statusEngenharia"]?.ToObject<int>() ?? 0,
+
+            codClassificacao = int.TryParse(jsonObject["codClassificacao"]?.ToString(), out var codClass)
+              ? codClass : 0,
+
+            statusEngenharia = int.TryParse(jsonObject["statusEngenharia"]?.ToString(), out var status)
+              ? status : 0,
+
             unidadeMedida = jsonObject["unidadeMedida"]?.ToString(),
 
             componentes = jsonObject["componentes"]?.Select(c => new ComponenteEng {
-              seqComponente = c["seqComponente"]?.ToObject<int>() ?? 0,
-              seqOperacional = !string.IsNullOrEmpty(jsonObject["seqOperacional"]?.ToString()) ? Convert.ToInt32(jsonObject["seqOperacional"]?.ToString()) : 0,
+              seqComponente = int.TryParse(c["seqComponente"]?.ToString(), out var seqC) ? seqC : 0,
+
+              seqOperacional = int.TryParse(c["seqOperacional"]?.ToString(), out var seqO) ? seqO : 0,
+
               codInsumo = c["codItem"]?.ToString(),
-              quantidade = c["quantidade"]?.ToObject<double>() ?? 0,
+
+              quantidade = double.TryParse(c["quantidade"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var qtd)
+                ? qtd : 0,
+
               centroCusto = c["centroCusto"]?.ToString(),
-              comprimento = c["comprimento"]?.ToObject<double>() ?? 0,
-              largura = c["largura"]?.ToObject<double>() ?? 0,
-              espessura = c["espessura"]?.ToObject<double>() ?? 0,
-              percQuebra = c["percQuebra"]?.ToObject<double>() ?? 0,
-              codClassificacaoInsumo = c["codClassificacao"]?.ToObject<int>() ?? 0,
+
+              comprimento = double.TryParse(c["comprimento"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var comp)
+                ? comp : 0,
+
+              largura = double.TryParse(c["largura"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var larg)
+                ? larg : 0,
+
+              espessura = double.TryParse(c["espessura"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var esp)
+                ? esp : 0,
+
+              percQuebra = double.TryParse(c["percQuebra"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pq)
+                ? pq : 0,
+
+              codClassificacaoInsumo = int.TryParse(c["codClassificacao"]?.ToString(), out var codCi) ? codCi : 0,
             }).ToList() ?? new List<ComponenteEng>(),
 
             operacoes = jsonObject["operacoes"]?.Select(o => new OperacaoEng {
-              seqOperacao = o["seqOperacao"]?.ToObject<int>() ?? 0,
-              codOperacao = o["codOperacao"]?.ToObject<int>() ?? 0,
+              seqOperacao = int.TryParse(o["seqOperacao"]?.ToString(), out var seqOp) ? seqOp : 0,
+
+              codOperacao = int.TryParse(o["codOperacao"]?.ToString(), out var codOp) ? codOp : 0,
+
               abreviaturaOperacao = o["abreviaturaOperacao"]?.ToString(),
-              numOperadores = o["numOpradores"]?.ToObject<double>() ?? 0,
-              codFaseOperacao = o["faseProducao"]?.ToObject<int>() ?? 0,
+
+              numOperadores = double.TryParse(o["numOpradores"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var numOp)
+                ? numOp : 0,
+
+              codFaseOperacao = int.TryParse(o["faseProducao"]?.ToString(), out var fase) ? fase : 0,
+
               codMascaraMaquina = o["mascMaquina"]?.ToString(),
-              tempoPadraoOperacao = o["tempoPadrao"]?.ToObject<double>() ?? 0,
-              tempoPreparacaoOperacao = o["tempoPreparacao"]?.ToObject<double>() ?? 0,
+
+              tempoPadraoOperacao = double.TryParse(o["tempoPadrao"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var tp)
+                ? tp * 60 : 0,
+
+              tempoPreparacaoOperacao = double.TryParse(o["tempoPreparacao"]?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var tprep)
+                ? tprep * 60 : 0,
+
               centroCusto = o["centroCusto"]?.ToString(),
             }).ToList() ?? new List<OperacaoEng>()
           };
 
+          foreach (var op in _return.operacoes) {
+            if (op.tempoPadraoOperacao == 0)
+              op.tempoPadraoOperacao = "00:01".FormatarHoraDouble();
+            if (op.numOperadores == 0)
+              op.numOperadores = 1;
+          }
         }
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao carregar item genérico");
@@ -185,5 +225,6 @@ namespace AxionConnect {
 
       return _return;
     }
+
   }
 }

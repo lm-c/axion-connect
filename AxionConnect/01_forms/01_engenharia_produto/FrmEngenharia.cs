@@ -47,6 +47,8 @@ namespace AxionConnect {
       trvProduto.ImageList = il;
       trvProduto.ItemHeight = 21;
 
+      flpEtapaConsumo.Controls.Clear();
+
       _produtos = new SortableBindingList<ProdutoErp>();
       dgv.MontarGrid<ProdutoErp>();
     }
@@ -98,15 +100,20 @@ namespace AxionConnect {
       //  splContainer.SplitterDistance = splContainer.Width - 381;
     }
 
+    private void TxtCodEngenharia_Enter(object sender, EventArgs e) {
+      txtCodEngenharia.Tag = txtCodEngenharia.Text;
+    }
+
     private void TxtCodEngenharia_Leave(object sender, EventArgs e) {
-      if (long.TryParse(txtCodEngenharia.Text, out long codEngenharia)) {
+      var tag = txtCodEngenharia.Tag as string;
+      if (tag != txtCodEngenharia.Text && long.TryParse(txtCodEngenharia.Text, out long codEngenharia)) {
         CarregarEngenhariaAsync(codEngenharia);
       }
     }
 
     private async Task CarregarEngenhariaAsync(long codEngenharia) {
       try {
-        txtCodEngenharia.Enabled = false;
+        txtCodEngenharia.ReadOnly = true;
         btnNovaEngenharia.Enabled = btnSalvar.Enabled = false;
         _arvoreCompleta.Nodes.Clear();
         trvProduto.Nodes.Clear();
@@ -120,7 +127,7 @@ namespace AxionConnect {
 
         CarregarGrid();
         if (_produtos.Count == 0) {
-          txtCodEngenharia.Enabled = true;
+          txtCodEngenharia.ReadOnly = false;
           txtCodEngenharia.Text = string.Empty;
           txtCodEngenharia.Focus();
         }
@@ -185,7 +192,7 @@ namespace AxionConnect {
       }
 
       ptbZoom.Visible = ptbDesenho.Visible = ptbProximoDesenho.Visible = false;
-      txtCodEngenharia.Enabled = true;
+      txtCodEngenharia.ReadOnly = false;
       txtCodEngenharia.Text = string.Empty;
 
       txtMaquina.CampoObrigatorio = txtOperacao.CampoObrigatorio = false;
@@ -196,6 +203,8 @@ namespace AxionConnect {
 
       // limpar labels
       LimparLabels();
+
+      flpEtapaConsumo.Controls.Clear();
 
       _arvoreCompleta.Nodes.Clear();
       trvProduto.Nodes.Clear();
@@ -257,8 +266,6 @@ namespace AxionConnect {
 
         AtualizarComponente();
         txtOperacao.Focus();
-
-        CarregarSequenciaOp();
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao atualizar dados Componente");
       }
@@ -372,6 +379,8 @@ namespace AxionConnect {
         clonedNode.ExpandAll();
         AtualizarInformacoes(produtoErp);
         GetProcess(produtoErp);
+
+        CarregarSequenciaOp(produtoErp);
       } catch (Exception ex) {
         MsgBox.Show($"Erro ao Atualizar Dados\n\n{ex.Message}", "Axion LM Projetos",
                  MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -527,6 +536,7 @@ namespace AxionConnect {
 
                   var componenteEng = new ComponenteEng {
                     seqComponente = index,
+                    seqOperacional = itemFilho.SeqOperacional <= produtoErp.Operacoes.Count ? itemFilho.SeqOperacional : 0,
                     codInsumo = itemFilho.CodProduto,
                     quantidade = qtd,
                     itemKanban = 0,
@@ -724,7 +734,7 @@ namespace AxionConnect {
     }
 
     private void AtualizarProcessos() {
-      var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
+      var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
 
       //produto_erp_operacao.ExcluirProcessoProduto(produtoERP);
 
@@ -739,10 +749,10 @@ namespace AxionConnect {
 
           // produto_erp_operacao.Salvar(operacao);
         }
-        produtoERP.Operacoes = operacoes;
+        produtoErp.Operacoes = operacoes;
 
-        ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoRevisar);
-        ProdutoErp.RemoverPendencia(produtoERP, PendenciasEngenharia.OperacaoNaoPossui);
+        ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoRevisar);
+        ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
       }
       //else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
       //  produtoERP.Operacoes = new List<produto_erp_operacao>();
@@ -750,6 +760,7 @@ namespace AxionConnect {
       //  //dgv.Grid.CurrentRow.DefaultCellStyle.ForeColor = dgv.Grid.CurrentRow.DefaultCellStyle.SelectionForeColor = corErro;
       //}
 
+      CarregarSequenciaOp(produtoErp);
       Toast.Success("Processo atualizado com sucesso!");
     }
 
@@ -761,18 +772,18 @@ namespace AxionConnect {
 
       card.SetText();
 
-      card.CardExclude += Card_CardExclude;
-      card.MouseDownCtrl += Card_MouseDownCtrl;
+      card.CardExclude += CardOperacaoExclude;
+      card.MouseDownCtrl += CardOperacaoMouseDownCtrl;
 
       flpOperacoes.Controls.Add(card);
     }
 
-    private void Card_CardExclude(object sender, EventArgs e) {
+    private void CardOperacaoExclude(object sender, EventArgs e) {
       this.flpOperacoes.Controls.Remove((CardOperacao)sender);
       AtualizarProcessos();
     }
 
-    private void Card_MouseDownCtrl(object sender, MouseEventArgs e) {
+    private void CardOperacaoMouseDownCtrl(object sender, MouseEventArgs e) {
       ((CardOperacao)sender).DoDragDrop((CardOperacao)sender, DragDropEffects.Move);
     }
 
@@ -922,12 +933,10 @@ namespace AxionConnect {
 
     #region Sequencia Operacional
 
-    private void CarregarSequenciaOp() {
+    private void CarregarSequenciaOp(ProdutoErp produtoErp) {
       if (dgv.Grid.CurrentRow != null) {
         try {
           flpEtapaConsumo.Controls.Clear();
-
-          var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
 
           CriarControlesGrupoEtapas(produtoErp);
 
@@ -940,63 +949,156 @@ namespace AxionConnect {
     // Criar Grupo de Etapas
     private void CriarControlesGrupoEtapas(ProdutoErp produtoErp) {
       try {
-        var flpProcNaoPossui = new LmPanelFlow {
-          Name = "flpOpNaoPossui",
-          Dock = DockStyle.Fill
-        };
-
-        var grupo = new LmGroupBox {
-          Name = "gpbOpNaoPossui",
-          Size = new System.Drawing.Size(flpEtapaConsumo.Width - 24, 69),
-          TabIndex = 0,
-          TabStop = false,
-          Text = "Não Definida",
-        };
-        grupo.Controls.Add(flpProcNaoPossui);
-
-        flpEtapaConsumo.Controls.Add(grupo);
-
         if (produtoErp.Operacoes.Count > 0) {
+          List<Processo> erp_Operacaos = new List<Processo>();
           foreach (var proc in produtoErp.Operacoes) {
             var operacao = Processo.ListaProcessos.FirstOrDefault(x => x.codAxion == proc.processo_id);
+            operacao.sequencia = proc.sequencia;
+            erp_Operacaos.Add(operacao);
 
-            var flpProc = new LmPanelFlow {
+            var flpProd = new LmPanelFlow {
               Name = "flpProc" + proc.sequencia,
-              Dock = DockStyle.Fill
+              Dock = DockStyle.Fill,
+              Padding = new Padding(0, 5, 0, 9),
+              AllowDrop = true,
             };
+
+            flpProd.DragEnter += Panel_DragEnter;
+            flpProd.DragDrop += Panel_DragDrop;
 
             var ctrlOp = new LmGroupBox {
               Name = "gpbOp" + proc.sequencia,
               Size = new System.Drawing.Size(flpEtapaConsumo.Width - 24, 69),
               TabIndex = 0,
               TabStop = false,
-              Text = $"{operacao.codOperacao} - {operacao.descrOperacao}"
+              Text = $"{operacao.codOperacao} {operacao.descrOperacao}",
+              Tag = proc.sequencia,
             };
 
+            ctrlOp.Controls.Add(flpProd);
             flpEtapaConsumo.Controls.Add(ctrlOp);
           }
-        }
 
-        System.Collections.IList list = trvProduto.Nodes[0].Nodes;
-        for (int i = 0; i < list.Count; i++) {
-          TreeNode nodeFilho = (TreeNode)list[i];
-          LmLabel lblComp = new LmLabel {
-            Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right))),
-            BackColor = System.Drawing.Color.Transparent,
-            FontSize = LmCorbieUI.Design.LmLabelSize.Small,
-            ForeColor = System.Drawing.Color.Red,
-            Location = new System.Drawing.Point(3, 3),
-            Margin = new System.Windows.Forms.Padding(3),
-            Name = "lblComp" + (i + 1),
-            Size = new System.Drawing.Size(356, 15),
-            TabIndex = 75,
-            Text = nodeFilho.Text,
-            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-          };
-          flpEtapaConsumo.Controls["gpbOpNaoPossui"].Controls["flpOpNaoPossui"].Controls.Add(lblComp);
+          System.Collections.IList list = trvProduto.Nodes[0].Nodes;
+          for (int i = 0; i < list.Count; i++) {
+            TreeNode nodeFilho = (TreeNode)list[i];
+            var prod = nodeFilho.Tag as ProdutoErp;
+            if (prod.SeqOperacional == 0)
+              prod.SeqOperacional = 1;
+
+            CardProduto card = new CardProduto {
+              Tag = prod,
+              Width = flpNaoDefinida.Width - 9
+            };
+
+            card.SetText();
+
+            if (produtoErp.Operacoes.Count == 1)
+              card.HideButtonMove();
+
+            card.MouseDownCtrl += CardProdutoMouseDownCtrl;
+            card.btnMover.MouseEnter += (s, e) => {
+              var listaNova = new   List<Processo>();
+              for (int i1 = 0; i1 < produtoErp.Operacoes.Count; i1++) {
+                produto_erp_operacao op = produtoErp.Operacoes[i1];
+                if (op.sequencia != prod.SeqOperacional) {
+                  listaNova.Add(erp_Operacaos[i1] );
+                }
+              }
+              FrmSeqSel frm = new FrmSeqSel(card.btnMover, listaNova);
+
+              if (frm.ShowDialog() == DialogResult.OK) {
+                var processoSelecionado = (Processo)frm.Tag;
+                if (processoSelecionado != null) {
+                  // Mover o card para o novo painel
+                  var destinoPanel = flpEtapaConsumo.Controls
+                      .OfType<LmGroupBox>()
+                      .FirstOrDefault(x => (int)x.Tag == processoSelecionado.sequencia)
+                      ?.Controls.OfType<LmPanelFlow>().FirstOrDefault();
+
+                  if (destinoPanel != null) {
+                    var painelAnterior = card.Parent as LmPanelFlow;
+                    painelAnterior.Controls.Remove(card);
+                    AjustarAlturaGroupBox(painelAnterior);
+
+                    destinoPanel.Controls.Add(card);
+                    AjustarAlturaGroupBox(destinoPanel);
+
+                    // Atualizar sequência do produto
+                    prod.SeqOperacional = processoSelecionado.sequencia;
+                  }
+                }
+              }
+            };
+
+            var flowPanel = flpEtapaConsumo.Controls
+              .OfType<LmGroupBox>()
+              .FirstOrDefault(x => (int)x.Tag == prod.SeqOperacional).Controls
+              .OfType<LmPanelFlow>().FirstOrDefault() as LmPanelFlow;
+            if (flowPanel == null) {
+              flowPanel = flpEtapaConsumo.Controls
+             .OfType<LmGroupBox>()
+             .FirstOrDefault().Controls
+             .OfType<LmPanelFlow>().FirstOrDefault() as LmPanelFlow;
+            }
+            flowPanel.Controls.Add(card);
+            AjustarAlturaGroupBox(flowPanel);
+          }
         }
       } catch (Exception ex) {
         LmException.ShowException(ex, "Erro ao criar grupo de etapas");
+      }
+    }
+
+    private void CardProdutoMouseDownCtrl(object sender, MouseEventArgs e) {
+      ((CardProduto)sender).DoDragDrop((CardProduto)sender, DragDropEffects.Move);
+    }
+
+    private void Panel_DragEnter(object sender, DragEventArgs e) {
+      if (e.Data.GetDataPresent(typeof(CardProduto))) {
+        e.Effect = DragDropEffects.Move;
+      } else {
+        e.Effect = DragDropEffects.None;
+      }
+    }
+
+    private void Panel_DragDrop(object sender, DragEventArgs e) {
+      if (e.Data.GetDataPresent(typeof(CardProduto))) {
+        var card = (CardProduto)e.Data.GetData(typeof(CardProduto));
+        var destino = (LmPanelFlow)sender;
+
+        // Remover do pai atual
+        if (card.Parent != null) {
+          var painelAnterior = card.Parent as LmPanelFlow;
+          painelAnterior.Controls.Remove(card);
+          AjustarAlturaGroupBox(painelAnterior);
+        }
+
+        // Adicionar ao novo painel
+        destino.Controls.Add(card);
+
+        // Opcional: alinhar ao topo
+        destino.Controls.SetChildIndex(card, 0);
+        AjustarAlturaGroupBox(destino);
+        var prod = card.Tag as ProdutoErp;
+        var seq = Convert.ToInt32(destino.Parent.Tag);
+        prod.SeqOperacional = seq;
+      }
+    }
+
+    private void AjustarAlturaGroupBox(LmPanelFlow painel) {
+      if (painel.Parent is LmGroupBox grupo) {
+        int alturaTotal = 0;
+
+        foreach (Control ctrl in painel.Controls) {
+          alturaTotal += ctrl.Height + ctrl.Margin.Vertical;
+        }
+
+        // Padding extra (opcional para manter um respiro visual)
+        alturaTotal += painel.Padding.Vertical + 20;
+
+        // Definir altura mínima
+        grupo.Height = Math.Max(69, alturaTotal);
       }
     }
 
