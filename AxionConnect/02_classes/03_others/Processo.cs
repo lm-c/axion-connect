@@ -95,11 +95,11 @@ namespace AxionConnect {
             codOperacao = operacao.codOperacao,
             abreviatura = operacao.abreviatura,
             descrOperacao = operacao.descricao.Replace("\\", "_").Replace("/", "_"),
-            descrMaquina = null,
-            mascaraMaquina = null,
-            codMaquina =null,
+            descrMaquina = "",
+            mascaraMaquina = "",
+            codMaquina = null,
             tipoOperacao =  TipoOperacao.Externa,
-            centroCusto = null,
+            centroCusto = "",
             faseProducao = operacao.faseProducao ?? 0, // Default para 0 se for nulo
           });
         }

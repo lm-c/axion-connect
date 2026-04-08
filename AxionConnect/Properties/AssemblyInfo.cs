@@ -26,7 +26,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion(InfoAssembly.Version)]
 
 public class InfoAssembly {
-  public const string Version = "4.0.0.0";
+  public const string Version = "4.0.0.5";
 
   public const string TitleView = "Axion Connect Leonardo Michalak";
 

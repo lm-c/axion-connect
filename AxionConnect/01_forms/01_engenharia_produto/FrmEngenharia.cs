@@ -34,6 +34,8 @@ namespace AxionConnect {
     public FrmEngenharia() {
       InitializeComponent();
 
+      lblWarning.Text = string.Empty;
+
       tbcOperacoes.SelectedIndex = 0;
 
       ImageList il = new ImageList();
@@ -66,8 +68,7 @@ namespace AxionConnect {
               Codigo = g.Key,
               Descricao = g.Key + " - " + g.First().descrOperacao
             })
-            .ToList()
-            .OrderBy(x => x.Codigo);
+            .ToList().OrderBy(x => x.Codigo);
 
         txtOperacao.CarregarComboBox(lists);
       } catch (Exception ex) {
@@ -151,6 +152,11 @@ namespace AxionConnect {
           return;
         }
 
+        if (_produtos.Count != dgv.Grid.RowCount) {
+          Toast.Warning("Remova o filtro da Tabela de Componentes para prosseguir.");
+          return;
+        }
+
         var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
 
         if (produtoERP.TipoComponente == TipoComponente.ItemBiblioteca) {
@@ -186,6 +192,14 @@ namespace AxionConnect {
     }
 
     private void BtnNovaEngenharia_Click(object sender, EventArgs e) {
+      if (dgv.Grid.RowCount > 0) {
+        var result = MsgBox.Show("Já existem componentes carregados.\r\n" +
+          "Deseja Limpar os dados atuais para iniciar nova engenharia?",
+          "Axion LM Projetos", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (result == DialogResult.No)
+          return;
+      }
+
       if (dgv.Grid.CurrentRow != null) {
         var produtoERP = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
         _eDrawingsCtrl.CloseActiveDoc(produtoERP.PathName);
@@ -203,6 +217,8 @@ namespace AxionConnect {
 
       // limpar labels
       LimparLabels();
+
+      lblWarning.Text = string.Empty;
 
       flpEtapaConsumo.Controls.Clear();
 
@@ -260,6 +276,30 @@ namespace AxionConnect {
       }
     }
 
+    private void CkbFantasma_CheckedChanged(object sender, EventArgs e) {
+      try {
+        if (dgv.Grid.CurrentRow == null) {
+          Toast.Info($"Nenhum produto selecionado");
+          return;
+        }
+
+        var produtoErp = dgv.Grid.CurrentRow.DataBoundItem as ProdutoErp;
+
+        produtoErp.Fantasma = ckbFantasma.Checked;
+        ClearControls();
+
+        if (produtoErp.Fantasma) {
+          ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoRevisar);
+          ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
+        } else {
+          ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
+        }
+
+      } catch (Exception ex) {
+        LmException.ShowException(ex, "Erro ao inserir Operação ao Componente");
+      }
+    }
+
     private void Dgv_RowIndexChanged(object sender, EventArgs e) {
       try {
         if (sender == null) return;
@@ -291,6 +331,10 @@ namespace AxionConnect {
 
         txtTempoOperacao.Text = tempoPadro;
         txtNumeroOperadores.Text = numOperadorPadrao.ToString();
+
+        ckbFantasma.CheckedChanged -= CkbFantasma_CheckedChanged;
+        ckbFantasma.Checked = produtoErp.Fantasma;
+        ckbFantasma.CheckedChanged += CkbFantasma_CheckedChanged;
 
         ptbZoom.Visible = true;
 
@@ -352,24 +396,6 @@ namespace AxionConnect {
         _eDrawingsCtrl.BackgroundColorOverride = true;
         _eDrawingsCtrl.BackgroundColor = 0xdfe4e9;
 
-        if (produtoErp.Pendencias.Where(y => y.EhPendenciaCritica()).ToList().Count > 0) {
-          var msgPend = string.Empty;
-          produtoErp.Pendencias.Where(y => y.EhPendenciaCritica()).ToList().ForEach(y => {
-            msgPend += $"- {y.ObterDescricaoEnum()}\r\n";
-          });
-
-          Toast.Warning($"{produtoErp.Name} [{produtoErp.Nivel}]\r\n{msgPend}");
-        }
-
-        if (produtoErp.Pendencias.Where(y => !y.EhPendenciaCritica()).ToList().Count > 0) {
-          var msgPend = string.Empty;
-          produtoErp.Pendencias.Where(y => !y.EhPendenciaCritica()).ToList().ForEach(y => {
-            msgPend += $"- {y.ObterDescricaoEnum()}\r\n";
-          });
-
-          Toast.Info($"{produtoErp.Name} [{produtoErp.Nivel}]\r\n{msgPend}");
-        }
-
         _eDrawingsCtrl.ActivateInkMarkup(0);
 
         TreeNode node = GetNodeByLevelPath(_arvoreCompleta, produtoErp.Nivel);
@@ -377,6 +403,9 @@ namespace AxionConnect {
         trvProduto.Nodes.Clear();
         trvProduto.Nodes.Add(clonedNode);
         clonedNode.ExpandAll();
+
+        AtualizarInfoAlerta(produtoErp);
+
         AtualizarInformacoes(produtoErp);
         GetProcess(produtoErp);
 
@@ -384,6 +413,39 @@ namespace AxionConnect {
       } catch (Exception ex) {
         MsgBox.Show($"Erro ao Atualizar Dados\n\n{ex.Message}", "Axion LM Projetos",
                  MessageBoxButtons.OK, MessageBoxIcon.Error);
+      }
+    }
+
+    private void AtualizarInfoAlerta(ProdutoErp produtoErp) {
+      if (produtoErp.Pendencias.Where(y => y.EhPendenciaCritica()).ToList().Count > 0) {
+        var msgPend = string.Empty;
+        produtoErp.Pendencias.Where(y => y.EhPendenciaCritica()).ToList().ForEach(y => {
+          msgPend += $"- {y.ObterDescricaoEnum()}\r\n";
+        });
+
+        UIThreadHelper.Invoke(lblWarning, () => {
+          // lblWarning.Visible = true;
+          lblWarning.Text = msgPend.Trim();
+          lblWarning.ForeColor = Color.Red;
+          lblWarning.Refresh();
+        });
+      } else if (produtoErp.Pendencias.Where(y => !y.EhPendenciaCritica()).ToList().Count > 0) {
+        var msgPend = string.Empty;
+        produtoErp.Pendencias.Where(y => !y.EhPendenciaCritica()).ToList().ForEach(y => {
+          msgPend += $"- {y.ObterDescricaoEnum()}\r\n";
+        });
+
+        UIThreadHelper.Invoke(lblWarning, () => {
+          // lblWarning.Visible = true;
+          lblWarning.Text = msgPend.Trim();
+          lblWarning.ForeColor = Color.DarkGoldenrod;
+          lblWarning.Refresh();
+        });
+      } else {
+        UIThreadHelper.Invoke(lblWarning, () => {
+          //lblWarning.Visible = false;
+          lblWarning.Text = string.Empty;
+        });
       }
     }
 
@@ -470,8 +532,11 @@ namespace AxionConnect {
               await PercorrerTreeViewSalvarEngAsync(db, trvProduto.Nodes[0], configApi, progress);
             });
 
-            MsgBox.Show("Cadastro de engenharia finalizado com sucesso", "Axion LM Projetos",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            AtualizarInfoAlerta(produtoErp);
+
+            Toast.Success("Cadastro de engenharia finalizado com sucesso");
+            //MsgBox.Show("Cadastro de engenharia finalizado com sucesso", "Axion LM Projetos",
+            //    MessageBoxButtons.OK, MessageBoxIcon.Information);
           }
         }));
       } catch (Exception ex) {
@@ -497,6 +562,13 @@ namespace AxionConnect {
             foreach (TreeNode nodeFilho in node.Nodes) {
               await PercorrerTreeViewSalvarEngAsync(db, nodeFilho, configApi, progress);
             }
+
+            // inativar item aqui se for fantasma
+            if (produtoErp.Fantasma) {
+              produtoErp.Situacao = 0;
+              await Api.UpdateItemGenericoAsync(produtoErp);
+            }
+
 
             var produto = _produtos.ToList().FirstOrDefault(x => produtoErp.Name == x.Name && produtoErp.Referencia == x.Referencia && produtoErp.Configuracao == x.Configuracao);
 
@@ -612,22 +684,20 @@ namespace AxionConnect {
 
       try {
         using (ContextoDados db = new ContextoDados()) {
-          System.Collections.IList list = dgv.Grid.Rows;
-          for (int i = 0; i < list.Count; i++) {
-            DataGridViewRow row = (DataGridViewRow)list[i];
-            var produtoErp = row.DataBoundItem as ProdutoErp;
-
-            //row.DefaultCellStyle.ForeColor = produtoErp.CadastrarProdutoErp
-            //  ? row.DefaultCellStyle.SelectionForeColor = corErro
-            //  : row.DefaultCellStyle.SelectionForeColor = corSucesso;
-
-            if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
+          foreach (var produtoErp in _produtos) {
+            if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca && !produtoErp.Fantasma) {
               ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
-              //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corErro;
             }
-            //else
-            //row.DefaultCellStyle.ForeColor = row.DefaultCellStyle.SelectionForeColor = corSucesso;
           }
+          //System.Collections.IList list = dgv.Grid.Rows;
+          //for (int i = 0; i < list.Count; i++) {
+          //  DataGridViewRow row = (DataGridViewRow)list[i];
+          //  var produtoErp = row.DataBoundItem as ProdutoErp;
+
+          //  if (produtoErp.Operacoes != null && produtoErp.Operacoes.Count == 0 && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca) {
+          //    ProdutoErp.AdicionarPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
+          //  }
+          //}
         }
       } catch (Exception ex) {
         Toast.Error("Erro ao verificar pendencias de processos. \r\n" + ex.Message);
@@ -651,8 +721,7 @@ namespace AxionConnect {
                 Codigo = (int)x.codMaquina,
                 Descricao = $"{x.codMaquina} - {x.descrMaquina}",
               })
-              .ToList()
-              .OrderBy(x => x.Codigo);
+              .ToList();
 
             txtMaquina.CarregarComboBox(lists);
 
@@ -753,6 +822,8 @@ namespace AxionConnect {
 
         ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoRevisar);
         ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
+
+        AtualizarInfoAlerta(produtoErp);
       }
       //else if (produtoERP.TipoComponente != TipoComponente.ItemBiblioteca) {
       //  produtoERP.Operacoes = new List<produto_erp_operacao>();
@@ -998,11 +1069,11 @@ namespace AxionConnect {
 
             card.MouseDownCtrl += CardProdutoMouseDownCtrl;
             card.btnMover.MouseEnter += (s, e) => {
-              var listaNova = new   List<Processo>();
+              var listaNova = new List<Processo>();
               for (int i1 = 0; i1 < produtoErp.Operacoes.Count; i1++) {
                 produto_erp_operacao op = produtoErp.Operacoes[i1];
                 if (op.sequencia != prod.SeqOperacional) {
-                  listaNova.Add(erp_Operacaos[i1] );
+                  listaNova.Add(erp_Operacaos[i1]);
                 }
               }
               FrmSeqSel frm = new FrmSeqSel(card.btnMover, listaNova);

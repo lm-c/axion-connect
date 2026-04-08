@@ -38,7 +38,7 @@
       // 
       this.txtSenha.Anchor = System.Windows.Forms.AnchorStyles.None;
       this.txtSenha.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtSenha.BorderRadius = 0;
+      this.txtSenha.BorderRadius = false;
       this.txtSenha.BorderSize = 2;
       this.txtSenha.CampoObrigatorio = true;
       this.txtSenha.F7ToolTipText = null;
@@ -74,7 +74,7 @@
       // 
       this.txtUsuario.Anchor = System.Windows.Forms.AnchorStyles.None;
       this.txtUsuario.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtUsuario.BorderRadius = 0;
+      this.txtUsuario.BorderRadius = false;
       this.txtUsuario.BorderSize = 2;
       this.txtUsuario.CampoObrigatorio = true;
       this.txtUsuario.F7ToolTipText = null;

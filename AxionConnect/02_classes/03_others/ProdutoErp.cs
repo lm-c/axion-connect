@@ -5,17 +5,13 @@ using LmCorbieUI.Metodos.AtributosCustomizados;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.Entity.Infrastructure;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Linq;
 using static AxionConnect.Api;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace AxionConnect {
   internal class ProdutoErp {
@@ -30,10 +26,10 @@ namespace AxionConnect {
     [AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
     public Bitmap Img2D { get; set; } = new Bitmap(20, 20);
 
-    //[LarguraColunaGrid(25)]
-    //[DisplayName(" "), ToolTipGrid("Item Fantasma")]
-    //[AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
-    //public Bitmap ImgFantasma { get; set; } = new Bitmap(20, 20);
+    [LarguraColunaGrid(25)]
+    [DisplayName(" "), ToolTipGrid("Item Fantasma")]
+    [AlinhamentoColunaGrid(System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter)]
+    public Bitmap ImgFantasma { get; set; } = new Bitmap(20, 20);
 
     [LarguraColunaGrid(25)]
     [DisplayName(" "), ToolTipGrid("Pendências")]
@@ -112,13 +108,19 @@ namespace AxionConnect {
     public double SobremetalCompr { get; set; } = 0;
 
     [Browsable(false)]
-    public int SeqOperacional { get; set; } 
+    public int SeqOperacional { get; set; }
 
     //[Browsable(false)]
     //public bool CadastrarProdutoErp { get; set; }
 
     //[Browsable(false)]
     //public bool CadastrarAddin { get; set; }
+
+    /// <summary>
+    /// 0 - inativo, 1 - ativo
+    /// </summary>
+    [Browsable(false)]
+    public int Situacao { get; set; } = 1;
 
     [Browsable(false)]
     public bool Fantasma { get; set; }
@@ -234,7 +236,7 @@ namespace AxionConnect {
           TipoComponente = prod.tipo_componente,
           SobremetalLarg = prod.sobremetal_largura,
           SobremetalCompr = prod.sobremetal_comprimento,
-          Fantasma = prod.fantasma,
+          Fantasma = engenharia != null && engenharia.engenhariaFantasma,
           TipoListaMaterial = prod.espessura > 0 && prod.largura > 0 ? TipoListaMaterial.Chapa : TipoListaMaterial.Soldagem,
           SeqOperacional = compEng != null ? compEng.seqOperacional : 1,
         };
@@ -338,10 +340,16 @@ namespace AxionConnect {
           if (!_listaProduto.Any(x => x.Name == produtoErp.Name && x.Referencia == produtoErp.Referencia && x.Configuracao == produtoErp.Configuracao)) {
             progress.Report($"Analisando Componente:\r\n{produtoErp.Name}");
 
-            if (produtoErp.TipoComponente != TipoComponente.ListaMaterial && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca && !produtoErp.Fantasma) {
+            if (produtoErp.TipoComponente != TipoComponente.ListaMaterial && produtoErp.TipoComponente != TipoComponente.ItemBiblioteca /*&& !produtoErp.Fantasma*/) {
               var nameDesenho = produtoErp.PathName.Substring(0, produtoErp.PathName.Length - 6) + "SLDDRW";
               produtoErp.Img3D = produtoErp.TipoComponente == TipoComponente.Montagem ? Properties.Resources.assembly : Properties.Resources.part;
               produtoErp.Img2D = File.Exists(nameDesenho) ? Properties.Resources.draw : Properties.Resources.not_draw;
+              if (produtoErp.Fantasma) {
+                ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoRevisar);
+                ProdutoErp.RemoverPendencia(produtoErp, PendenciasEngenharia.OperacaoNaoPossui);
+                produtoErp.ImgFantasma = Properties.Resources.fantasma;
+              }
+
               _listaProduto.Add(produtoErp);
             }
 

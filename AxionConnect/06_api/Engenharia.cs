@@ -133,9 +133,7 @@ namespace AxionConnect {
       } catch (Exception ex) {
         throw new Exception($"{ex.Message}");
       }
-
     }
-
 
     internal static async Task<Engenharia> GetEngenhariaAsync(string codigo) {
       Engenharia _return = null;
@@ -211,6 +209,11 @@ namespace AxionConnect {
               centroCusto = o["centroCusto"]?.ToString(),
             }).ToList() ?? new List<OperacaoEng>()
           };
+
+
+          var tipoEnc = jsonObject["tipoEngenharia"]?.ToString();
+
+          _return.engenhariaFantasma = tipoEnc == "2";
 
           foreach (var op in _return.operacoes) {
             if (op.tempoPadraoOperacao == 0)

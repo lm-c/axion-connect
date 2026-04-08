@@ -52,6 +52,7 @@
       this.txtOperacao = new LmCorbieUI.Controls.LmTextBox();
       this.lmLabel3 = new LmCorbieUI.Controls.LmLabel();
       this.lmPanel11 = new LmCorbieUI.Controls.LmPanel();
+      this.ckbFantasma = new LmCorbieUI.Controls.LmCheckBox();
       this.btnInserir = new LmCorbieUI.Controls.LmButton();
       this.btnProximo = new LmCorbieUI.Controls.LmButton();
       this.btnVoltar = new LmCorbieUI.Controls.LmButton();
@@ -73,8 +74,8 @@
       this.tbpEngenharia = new LmCorbieUI.Controls.LmTabPage();
       this.trvProduto = new System.Windows.Forms.TreeView();
       this.pnrRigth = new LmCorbieUI.Controls.LmPanel();
+      this.lblWarning = new LmCorbieUI.Controls.LmLabel();
       this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-      this.eDrawingsUC = new AxionConnect.EDrawingsUserControl();
       this.ptbZoom = new System.Windows.Forms.PictureBox();
       this.ptbProximoDesenho = new System.Windows.Forms.PictureBox();
       this.ptbDesenho = new System.Windows.Forms.PictureBox();
@@ -94,6 +95,7 @@
       this.lblNome = new LmCorbieUI.Controls.LmLabel();
       this.lmPanel13 = new LmCorbieUI.Controls.LmPanel();
       this.pnlCodigo = new LmCorbieUI.Controls.LmPanel();
+      this.eDrawingsUC = new AxionConnect.EDrawingsUserControl();
       this.pnlDados.SuspendLayout();
       this.tableLayoutPanel1.SuspendLayout();
       this.tbcOperacoes.SuspendLayout();
@@ -145,7 +147,7 @@
       this.txtCodEngenharia.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.txtCodEngenharia.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtCodEngenharia.BorderRadius = 15;
+      this.txtCodEngenharia.BorderRadius = true;
       this.txtCodEngenharia.BorderSize = 2;
       this.txtCodEngenharia.F7ToolTipText = null;
       this.txtCodEngenharia.F8ToolTipText = null;
@@ -164,7 +166,7 @@
       this.txtCodEngenharia.SelectionLength = 0;
       this.txtCodEngenharia.SelectionStart = 0;
       this.txtCodEngenharia.ShortcutsEnabled = true;
-      this.txtCodEngenharia.Size = new System.Drawing.Size(367, 31);
+      this.txtCodEngenharia.Size = new System.Drawing.Size(393, 31);
       this.txtCodEngenharia.TabIndex = 0;
       this.txtCodEngenharia.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
       this.txtCodEngenharia.UnderlinedStyle = false;
@@ -189,7 +191,7 @@
       this.tableLayoutPanel1.Name = "tableLayoutPanel1";
       this.tableLayoutPanel1.RowCount = 1;
       this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-      this.tableLayoutPanel1.Size = new System.Drawing.Size(374, 30);
+      this.tableLayoutPanel1.Size = new System.Drawing.Size(396, 30);
       this.tableLayoutPanel1.TabIndex = 1;
       // 
       // btnNovaEngenharia
@@ -205,10 +207,10 @@
       this.btnNovaEngenharia.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
       this.btnNovaEngenharia.Image = ((System.Drawing.Image)(resources.GetObject("btnNovaEngenharia.Image")));
       this.btnNovaEngenharia.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-      this.btnNovaEngenharia.Location = new System.Drawing.Point(190, 3);
+      this.btnNovaEngenharia.Location = new System.Drawing.Point(201, 3);
       this.btnNovaEngenharia.Margin = new System.Windows.Forms.Padding(3, 3, 3, 1);
       this.btnNovaEngenharia.Name = "btnNovaEngenharia";
-      this.btnNovaEngenharia.Size = new System.Drawing.Size(181, 26);
+      this.btnNovaEngenharia.Size = new System.Drawing.Size(192, 26);
       this.btnNovaEngenharia.TabIndex = 3;
       this.btnNovaEngenharia.Text = " Nova Engenharia";
       this.btnNovaEngenharia.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
@@ -397,10 +399,10 @@
       this.tbcOperacoes.Controls.Add(this.tbpConsumo);
       this.tbcOperacoes.Controls.Add(this.tbpEngenharia);
       this.tbcOperacoes.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.tbcOperacoes.Location = new System.Drawing.Point(0, 93);
+      this.tbcOperacoes.Location = new System.Drawing.Point(0, 126);
       this.tbcOperacoes.Name = "tbcOperacoes";
-      this.tbcOperacoes.SelectedIndex = 2;
-      this.tbcOperacoes.Size = new System.Drawing.Size(401, 632);
+      this.tbcOperacoes.SelectedIndex = 1;
+      this.tbcOperacoes.Size = new System.Drawing.Size(401, 599);
       this.tbcOperacoes.TabIndex = 1;
       this.tbcOperacoes.UseSelectable = true;
       // 
@@ -408,10 +410,10 @@
       // 
       this.tbpLista.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
       this.tbpLista.Controls.Add(this.dgv);
-      this.tbpLista.Location = new System.Drawing.Point(4, 38);
+      this.tbpLista.Location = new System.Drawing.Point(4, 35);
       this.tbpLista.Name = "tbpLista";
       this.tbpLista.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
-      this.tbpLista.Size = new System.Drawing.Size(393, 590);
+      this.tbpLista.Size = new System.Drawing.Size(393, 560);
       this.tbpLista.TabIndex = 1;
       this.tbpLista.Text = "Componentes";
       // 
@@ -445,7 +447,7 @@
       this.dgv.PermiteQuebrarLinhaCabecalho = false;
       this.dgv.PermiteSelecaoMultipla = false;
       this.dgv.PosColunasGrid = "";
-      this.dgv.Size = new System.Drawing.Size(391, 579);
+      this.dgv.Size = new System.Drawing.Size(391, 549);
       this.dgv.TabIndex = 98;
       this.dgv.Texto = "";
       this.dgv.TituloRelatorio = "";
@@ -457,10 +459,10 @@
       this.tbpOperacoes.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
       this.tbpOperacoes.Controls.Add(this.flpOperacoes);
       this.tbpOperacoes.Controls.Add(this.lmPanelOP);
-      this.tbpOperacoes.Location = new System.Drawing.Point(4, 38);
+      this.tbpOperacoes.Location = new System.Drawing.Point(4, 35);
       this.tbpOperacoes.Name = "tbpOperacoes";
       this.tbpOperacoes.Padding = new System.Windows.Forms.Padding(3, 9, 3, 3);
-      this.tbpOperacoes.Size = new System.Drawing.Size(393, 590);
+      this.tbpOperacoes.Size = new System.Drawing.Size(393, 560);
       this.tbpOperacoes.TabIndex = 0;
       this.tbpOperacoes.Text = "Operações";
       // 
@@ -470,10 +472,10 @@
       this.flpOperacoes.AutoScroll = true;
       this.flpOperacoes.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(223)))), ((int)(((byte)(228)))), ((int)(((byte)(233)))));
       this.flpOperacoes.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.flpOperacoes.Location = new System.Drawing.Point(3, 209);
+      this.flpOperacoes.Location = new System.Drawing.Point(3, 234);
       this.flpOperacoes.Name = "flpOperacoes";
       this.flpOperacoes.Padding = new System.Windows.Forms.Padding(0, 5, 0, 9);
-      this.flpOperacoes.Size = new System.Drawing.Size(385, 376);
+      this.flpOperacoes.Size = new System.Drawing.Size(385, 321);
       this.flpOperacoes.TabIndex = 6;
       this.flpOperacoes.DragDrop += new System.Windows.Forms.DragEventHandler(this.FlpOperacoes_DragDrop);
       this.flpOperacoes.DragEnter += new System.Windows.Forms.DragEventHandler(this.FlpOperacoes_DragEnter);
@@ -487,7 +489,7 @@
       this.lmPanelOP.IsPanelMenu = false;
       this.lmPanelOP.Location = new System.Drawing.Point(3, 9);
       this.lmPanelOP.Name = "lmPanelOP";
-      this.lmPanelOP.Size = new System.Drawing.Size(385, 200);
+      this.lmPanelOP.Size = new System.Drawing.Size(385, 225);
       this.lmPanelOP.TabIndex = 0;
       // 
       // tableLayoutPanel2
@@ -508,7 +510,7 @@
       this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 54F));
       this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 54F));
       this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-      this.tableLayoutPanel2.Size = new System.Drawing.Size(383, 198);
+      this.tableLayoutPanel2.Size = new System.Drawing.Size(383, 223);
       this.tableLayoutPanel2.TabIndex = 0;
       // 
       // lmPanel8
@@ -532,7 +534,7 @@
       this.txtOperacao.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.txtOperacao.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtOperacao.BorderRadius = 15;
+      this.txtOperacao.BorderRadius = true;
       this.txtOperacao.BorderSize = 2;
       this.txtOperacao.F7ToolTipText = null;
       this.txtOperacao.F8ToolTipText = null;
@@ -584,6 +586,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
       this.lmPanel11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(223)))), ((int)(((byte)(228)))), ((int)(((byte)(233)))));
       this.tableLayoutPanel2.SetColumnSpan(this.lmPanel11, 2);
+      this.lmPanel11.Controls.Add(this.ckbFantasma);
       this.lmPanel11.Controls.Add(this.btnInserir);
       this.lmPanel11.Controls.Add(this.btnProximo);
       this.lmPanel11.Controls.Add(this.btnVoltar);
@@ -591,8 +594,19 @@
       this.lmPanel11.Location = new System.Drawing.Point(0, 162);
       this.lmPanel11.Margin = new System.Windows.Forms.Padding(0);
       this.lmPanel11.Name = "lmPanel11";
-      this.lmPanel11.Size = new System.Drawing.Size(383, 36);
+      this.lmPanel11.Size = new System.Drawing.Size(383, 61);
       this.lmPanel11.TabIndex = 4;
+      // 
+      // ckbFantasma
+      // 
+      this.ckbFantasma.AutoSize = true;
+      this.ckbFantasma.Location = new System.Drawing.Point(4, 38);
+      this.ckbFantasma.Name = "ckbFantasma";
+      this.ckbFantasma.Size = new System.Drawing.Size(138, 19);
+      this.ckbFantasma.TabIndex = 3;
+      this.ckbFantasma.Text = "Produto Fantasma";
+      this.ckbFantasma.UseSelectable = true;
+      this.ckbFantasma.CheckedChanged += new System.EventHandler(this.CkbFantasma_CheckedChanged);
       // 
       // btnInserir
       // 
@@ -686,7 +700,7 @@
       this.txtNumeroOperadores.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.txtNumeroOperadores.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtNumeroOperadores.BorderRadius = 15;
+      this.txtNumeroOperadores.BorderRadius = true;
       this.txtNumeroOperadores.BorderSize = 2;
       this.txtNumeroOperadores.F7ToolTipText = null;
       this.txtNumeroOperadores.F8ToolTipText = null;
@@ -747,7 +761,7 @@
       this.txtTempoOperacao.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.txtTempoOperacao.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtTempoOperacao.BorderRadius = 15;
+      this.txtTempoOperacao.BorderRadius = true;
       this.txtTempoOperacao.BorderSize = 2;
       this.txtTempoOperacao.F7ToolTipText = null;
       this.txtTempoOperacao.F8ToolTipText = null;
@@ -797,7 +811,7 @@
       this.txtMaquina.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
       this.txtMaquina.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(234)))), ((int)(((byte)(238)))), ((int)(((byte)(242)))));
-      this.txtMaquina.BorderRadius = 15;
+      this.txtMaquina.BorderRadius = true;
       this.txtMaquina.BorderSize = 2;
       this.txtMaquina.F7ToolTipText = null;
       this.txtMaquina.F8ToolTipText = null;
@@ -844,10 +858,10 @@
       // 
       this.tbpConsumo.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
       this.tbpConsumo.Controls.Add(this.flpEtapaConsumo);
-      this.tbpConsumo.Location = new System.Drawing.Point(4, 38);
+      this.tbpConsumo.Location = new System.Drawing.Point(4, 35);
       this.tbpConsumo.Name = "tbpConsumo";
       this.tbpConsumo.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
-      this.tbpConsumo.Size = new System.Drawing.Size(393, 590);
+      this.tbpConsumo.Size = new System.Drawing.Size(393, 560);
       this.tbpConsumo.TabIndex = 3;
       this.tbpConsumo.Text = "Sequência Oper.";
       // 
@@ -861,7 +875,7 @@
       this.flpEtapaConsumo.Location = new System.Drawing.Point(0, 9);
       this.flpEtapaConsumo.Name = "flpEtapaConsumo";
       this.flpEtapaConsumo.Padding = new System.Windows.Forms.Padding(0, 5, 0, 9);
-      this.flpEtapaConsumo.Size = new System.Drawing.Size(391, 579);
+      this.flpEtapaConsumo.Size = new System.Drawing.Size(391, 549);
       this.flpEtapaConsumo.TabIndex = 7;
       // 
       // gpbProcNaoPossui
@@ -874,6 +888,7 @@
       this.gpbProcNaoPossui.TabIndex = 0;
       this.gpbProcNaoPossui.TabStop = false;
       this.gpbProcNaoPossui.Text = "Não Definida";
+      this.gpbProcNaoPossui.TitleFont = new System.Drawing.Font("Segoe UI", 12.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
       // 
       // flpNaoDefinida
       // 
@@ -882,9 +897,9 @@
       this.flpNaoDefinida.Controls.Add(this.lmLabel8);
       this.flpNaoDefinida.Dock = System.Windows.Forms.DockStyle.Fill;
       this.flpNaoDefinida.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-      this.flpNaoDefinida.Location = new System.Drawing.Point(3, 20);
+      this.flpNaoDefinida.Location = new System.Drawing.Point(3, 16);
       this.flpNaoDefinida.Name = "flpNaoDefinida";
-      this.flpNaoDefinida.Size = new System.Drawing.Size(362, 46);
+      this.flpNaoDefinida.Size = new System.Drawing.Size(362, 50);
       this.flpNaoDefinida.TabIndex = 75;
       this.flpNaoDefinida.WrapContents = false;
       // 
@@ -920,10 +935,10 @@
       // 
       this.tbpEngenharia.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
       this.tbpEngenharia.Controls.Add(this.trvProduto);
-      this.tbpEngenharia.Location = new System.Drawing.Point(4, 38);
+      this.tbpEngenharia.Location = new System.Drawing.Point(4, 35);
       this.tbpEngenharia.Name = "tbpEngenharia";
       this.tbpEngenharia.Padding = new System.Windows.Forms.Padding(0, 9, 0, 0);
-      this.tbpEngenharia.Size = new System.Drawing.Size(393, 590);
+      this.tbpEngenharia.Size = new System.Drawing.Size(393, 560);
       this.tbpEngenharia.TabIndex = 2;
       this.tbpEngenharia.Text = "Engenharia";
       // 
@@ -933,7 +948,7 @@
       this.trvProduto.Dock = System.Windows.Forms.DockStyle.Fill;
       this.trvProduto.Location = new System.Drawing.Point(0, 9);
       this.trvProduto.Name = "trvProduto";
-      this.trvProduto.Size = new System.Drawing.Size(391, 579);
+      this.trvProduto.Size = new System.Drawing.Size(391, 549);
       this.trvProduto.TabIndex = 7;
       // 
       // pnrRigth
@@ -941,30 +956,38 @@
       this.pnrRigth.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(223)))), ((int)(((byte)(228)))), ((int)(((byte)(233)))));
       this.pnrRigth.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
       this.pnrRigth.Controls.Add(this.tbcOperacoes);
+      this.pnrRigth.Controls.Add(this.lblWarning);
       this.pnrRigth.Controls.Add(this.pnlDados);
       this.pnrRigth.Dock = System.Windows.Forms.DockStyle.Right;
       this.pnrRigth.IsPanelMenu = false;
-      this.pnrRigth.Location = new System.Drawing.Point(533, 0);
+      this.pnrRigth.Location = new System.Drawing.Point(428, 0);
       this.pnrRigth.Name = "pnrRigth";
       this.pnrRigth.Size = new System.Drawing.Size(403, 727);
       this.pnrRigth.TabIndex = 0;
       // 
-      // eDrawingsUC
+      // lblWarning
       // 
-      this.eDrawingsUC.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-      this.eDrawingsUC.Dock = System.Windows.Forms.DockStyle.Fill;
-      this.eDrawingsUC.Location = new System.Drawing.Point(0, 156);
-      this.eDrawingsUC.Name = "eDrawingsUC";
-      this.eDrawingsUC.Size = new System.Drawing.Size(533, 571);
-      this.eDrawingsUC.TabIndex = 2;
-      this.eDrawingsUC.EDrawingsControlLoaded += new System.Action<eDrawings.Interop.EModelViewControl.EModelViewControl>(this.OnEDrawingsControlLoaded);
+      this.lblWarning.BackColor = System.Drawing.Color.Transparent;
+      this.lblWarning.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+      this.lblWarning.Dock = System.Windows.Forms.DockStyle.Top;
+      this.lblWarning.FontSize = LmCorbieUI.Design.LmLabelSize.Small;
+      this.lblWarning.FontWeight = LmCorbieUI.Design.LmLabelWeight.Bold;
+      this.lblWarning.ForeColor = System.Drawing.Color.DarkGoldenrod;
+      this.lblWarning.Location = new System.Drawing.Point(0, 93);
+      this.lblWarning.Margin = new System.Windows.Forms.Padding(3);
+      this.lblWarning.Name = "lblWarning";
+      this.lblWarning.Size = new System.Drawing.Size(401, 33);
+      this.lblWarning.TabIndex = 100;
+      this.lblWarning.Text = "Alerta\r\nInformação";
+      this.lblWarning.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+      this.lblWarning.UseCustomColor = true;
       // 
       // ptbZoom
       // 
       this.ptbZoom.Anchor = System.Windows.Forms.AnchorStyles.Right;
       this.ptbZoom.BackColor = System.Drawing.Color.Transparent;
       this.ptbZoom.Image = global::AxionConnect.Properties.Resources.zoomfit;
-      this.ptbZoom.Location = new System.Drawing.Point(503, 319);
+      this.ptbZoom.Location = new System.Drawing.Point(398, 319);
       this.ptbZoom.Name = "ptbZoom";
       this.ptbZoom.Size = new System.Drawing.Size(24, 24);
       this.ptbZoom.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -978,7 +1001,7 @@
       this.ptbProximoDesenho.Anchor = System.Windows.Forms.AnchorStyles.Right;
       this.ptbProximoDesenho.BackColor = System.Drawing.Color.Transparent;
       this.ptbProximoDesenho.Image = global::AxionConnect.Properties.Resources.next;
-      this.ptbProximoDesenho.Location = new System.Drawing.Point(503, 373);
+      this.ptbProximoDesenho.Location = new System.Drawing.Point(398, 373);
       this.ptbProximoDesenho.Name = "ptbProximoDesenho";
       this.ptbProximoDesenho.Size = new System.Drawing.Size(24, 24);
       this.ptbProximoDesenho.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -992,7 +1015,7 @@
       this.ptbDesenho.Anchor = System.Windows.Forms.AnchorStyles.Right;
       this.ptbDesenho.BackColor = System.Drawing.Color.Transparent;
       this.ptbDesenho.Image = global::AxionConnect.Properties.Resources.draw_base;
-      this.ptbDesenho.Location = new System.Drawing.Point(503, 346);
+      this.ptbDesenho.Location = new System.Drawing.Point(398, 346);
       this.ptbDesenho.Name = "ptbDesenho";
       this.ptbDesenho.Size = new System.Drawing.Size(24, 24);
       this.ptbDesenho.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -1010,7 +1033,7 @@
       this.pnlView.IsPanelMenu = false;
       this.pnlView.Location = new System.Drawing.Point(0, 0);
       this.pnlView.Name = "pnlView";
-      this.pnlView.Size = new System.Drawing.Size(533, 727);
+      this.pnlView.Size = new System.Drawing.Size(428, 727);
       this.pnlView.TabIndex = 8;
       // 
       // flpInfos
@@ -1027,7 +1050,7 @@
       this.flpInfos.Dock = System.Windows.Forms.DockStyle.Top;
       this.flpInfos.Location = new System.Drawing.Point(0, 0);
       this.flpInfos.Name = "flpInfos";
-      this.flpInfos.Size = new System.Drawing.Size(533, 156);
+      this.flpInfos.Size = new System.Drawing.Size(428, 156);
       this.flpInfos.TabIndex = 80;
       // 
       // lmPanel15
@@ -1210,11 +1233,21 @@
       this.pnlCodigo.Size = new System.Drawing.Size(353, 18);
       this.pnlCodigo.TabIndex = 84;
       // 
+      // eDrawingsUC
+      // 
+      this.eDrawingsUC.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+      this.eDrawingsUC.Dock = System.Windows.Forms.DockStyle.Fill;
+      this.eDrawingsUC.Location = new System.Drawing.Point(0, 156);
+      this.eDrawingsUC.Name = "eDrawingsUC";
+      this.eDrawingsUC.Size = new System.Drawing.Size(428, 571);
+      this.eDrawingsUC.TabIndex = 2;
+      this.eDrawingsUC.EDrawingsControlLoaded += new System.Action<eDrawings.Interop.EModelViewControl.EModelViewControl>(this.OnEDrawingsControlLoaded);
+      // 
       // FrmEngenharia
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(936, 727);
+      this.ClientSize = new System.Drawing.Size(831, 727);
       this.Controls.Add(this.ptbZoom);
       this.Controls.Add(this.ptbProximoDesenho);
       this.Controls.Add(this.ptbDesenho);
@@ -1237,6 +1270,7 @@
       this.lmPanel8.ResumeLayout(false);
       this.lmPanel8.PerformLayout();
       this.lmPanel11.ResumeLayout(false);
+      this.lmPanel11.PerformLayout();
       this.lmPanel6.ResumeLayout(false);
       this.lmPanel7.ResumeLayout(false);
       this.lmPanel10.ResumeLayout(false);
@@ -1335,6 +1369,8 @@
     private LmCorbieUI.Controls.LmLabel lmLabel8;
     private LmCorbieUI.Controls.LmPanelFlow flpNaoDefinida;
     private LmCorbieUI.Controls.LmLabel lblComp;
-  }
+    private LmCorbieUI.Controls.LmLabel lblWarning;
+        private LmCorbieUI.Controls.LmCheckBox ckbFantasma;
+    }
 }
 
